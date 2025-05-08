@@ -32,6 +32,7 @@ model Form {
   category    Category
   status      FormStatus @default(DRAFT)
   deadline    DateTime?
+  estimatedTime String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   createdBy   User       @relation("FormCreator", fields: [createdById], references: [id])

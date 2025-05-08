@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
@@ -46,6 +46,21 @@ export default function AdminFormulariosPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [deleteFormId, setDeleteFormId] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [forms, setForms] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchForms = async () => {
+      setLoading(true)
+      const res = await fetch("/api/forms")
+      if (res.ok) {
+        const data = await res.json()
+        setForms(data)
+      }
+      setLoading(false)
+    }
+    fetchForms()
+  }, [])
 
   // Filtragem de formulários
   const filteredForms = forms.filter((form) => {
@@ -315,51 +330,3 @@ function StatusBadge({ status }: { status: string }) {
       return <Badge variant="outline">{status}</Badge>
   }
 }
-
-const forms = [
-  {
-    id: "form-1",
-    title: "Avaliação Institucional 2023.2",
-    description: "Avaliação geral da instituição para o semestre 2023.2",
-    status: "active",
-    createdAt: "15/04/2023",
-    deadline: "30/06/2023",
-    responses: "248/1200",
-  },
-  {
-    id: "form-2",
-    title: "Avaliação de Infraestrutura",
-    description: "Avaliação das instalações físicas e recursos tecnológicos",
-    status: "active",
-    createdAt: "10/04/2023",
-    deadline: "15/06/2023",
-    responses: "156/1200",
-  },
-  {
-    id: "form-3",
-    title: "Avaliação Docente 2023.1",
-    description: "Avaliação do corpo docente pelos discentes",
-    status: "closed",
-    createdAt: "01/02/2023",
-    deadline: "30/03/2023",
-    responses: "980/1200",
-  },
-  {
-    id: "form-4",
-    title: "Avaliação de Serviços",
-    description: "Avaliação dos serviços administrativos e de apoio",
-    status: "draft",
-    createdAt: "20/04/2023",
-    deadline: "Não definido",
-    responses: "0/0",
-  },
-  {
-    id: "form-5",
-    title: "Avaliação de Cursos",
-    description: "Avaliação específica dos cursos de graduação",
-    status: "frozen",
-    createdAt: "05/03/2023",
-    deadline: "15/05/2023",
-    responses: "320/1200",
-  },
-]

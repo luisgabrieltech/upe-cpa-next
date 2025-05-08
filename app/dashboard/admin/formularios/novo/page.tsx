@@ -335,9 +335,39 @@ export default function NovoFormularioPage() {
     }
   };
 
-  const saveForm = () => {
-    console.log("Formulário salvo:", formData)
-    router.push("/dashboard/admin/formularios")
+  const saveForm = async () => {
+    try {
+      const res = await fetch("/api/forms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category?.toUpperCase(),
+          status: "ACTIVE",
+          deadline: formData.endDate,
+          estimatedTime: formData.estimatedTime,
+          questions: formData.questions.map(q => ({
+            ...q,
+            type: q.type
+              .replace("multiple_choice", "MULTIPLE_CHOICE")
+              .replace("checkbox", "CHECKBOX")
+              .replace("text", "TEXT")
+              .replace("scale", "SCALE")
+              .replace("grid", "GRID")
+              .replace("dropdown", "DROPDOWN"),
+          })),
+        }),
+      })
+      if (res.ok) {
+        router.push("/dashboard/admin/formularios")
+      } else {
+        alert("Erro ao salvar formulário")
+      }
+    } catch (error) {
+      alert("Erro ao salvar formulário")
+    }
   }
 
   const QuestionsList = React.memo(() => {
@@ -619,11 +649,11 @@ export default function NovoFormularioPage() {
                         <SelectValue placeholder="Selecione uma categoria" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="institutional">Avaliação Institucional</SelectItem>
-                        <SelectItem value="infrastructure">Avaliação de Infraestrutura</SelectItem>
-                        <SelectItem value="teaching">Avaliação Docente</SelectItem>
-                        <SelectItem value="course">Avaliação de Curso</SelectItem>
-                        <SelectItem value="services">Avaliação de Serviços</SelectItem>
+                        <SelectItem value="INSTITUTIONAL">Avaliação Institucional</SelectItem>
+                        <SelectItem value="INFRASTRUCTURE">Avaliação de Infraestrutura</SelectItem>
+                        <SelectItem value="TEACHING">Avaliação Docente</SelectItem>
+                        <SelectItem value="COURSE">Avaliação de Curso</SelectItem>
+                        <SelectItem value="SERVICES">Avaliação de Serviços</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
