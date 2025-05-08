@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { motion } from "framer-motion"
 import { ArrowLeft, Check, Eye, EyeOff, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -20,6 +23,15 @@ export default function RegisterPage() {
   const [passwordStrength, setPasswordStrength] = useState(0)
   const [passwordMatch, setPasswordMatch] = useState(true)
   const [passwordFeedback, setPasswordFeedback] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    userType: "",
+  })
+  const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (!password) {
@@ -60,17 +72,80 @@ export default function RegisterPage() {
   }, [password])
 
   useEffect(() => {
-    if (!confirmPassword) {
-      setPasswordMatch(true)
-      return
-    }
     setPasswordMatch(password === confirmPassword)
   }, [password, confirmPassword])
 
-  const getStrengthColor = () => {
-    if (passwordStrength < 50) return "bg-red-500"
-    if (passwordStrength < 100) return "bg-yellow-500"
-    return "bg-green-500"
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    if (!passwordMatch) {
+      toast({
+        title: "Erro no cadastro",
+        description: "As senhas não coincidem",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    if (passwordStrength < 100) {
+      toast({
+        title: "Erro no cadastro",
+        description: "A senha não atende aos requisitos mínimos de segurança",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          password,
+          userType: formData.userType,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || "Erro ao criar conta")
+      }
+
+      toast({
+        title: "Conta criada com sucesso",
+        description: "Você será redirecionado para o login",
+      })
+
+      // Fazer login automático após o registro
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        router.push("/login")
+        return
+      }
+
+      router.push("/dashboard")
+      router.refresh()
+    } catch (error) {
+      toast({
+        title: "Erro ao criar conta",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao criar sua conta",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -87,148 +162,169 @@ export default function RegisterPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[450px]"
+        className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
       >
         <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Criar uma conta</h1>
-          <p className="text-sm text-muted-foreground">Preencha os campos abaixo para se cadastrar no sistema</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Crie sua conta</h1>
+          <p className="text-sm text-muted-foreground">Preencha os dados abaixo para se cadastrar</p>
         </div>
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Cadastro</CardTitle>
             <CardDescription>Crie sua conta para participar das avaliações da CPA-UPE</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="first-name">Nome</Label>
-                <Input id="first-name" placeholder="João" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="last-name">Sobrenome</Label>
-                <Input id="last-name" placeholder="Silva" />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">E-mail institucional</Label>
-              <Input id="email" type="email" placeholder="nome@upe.br" autoComplete="email" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="user-type">Tipo de usuário</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione seu vínculo com a UPE" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="student">Estudante</SelectItem>
-                  <SelectItem value="professor">Professor</SelectItem>
-                  <SelectItem value="staff">Técnico Administrativo</SelectItem>
-                  <SelectItem value="external">Comunidade Externa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">{showPassword ? "Esconder senha" : "Mostrar senha"}</span>
-                </Button>
-              </div>
-              {password && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Progress value={passwordStrength} className={`h-2 ${getStrengthColor()}`} />
-                    <span className="text-xs font-medium">
-                      {passwordStrength === 0
-                        ? "Muito fraca"
-                        : passwordStrength <= 25
-                          ? "Fraca"
-                          : passwordStrength <= 50
-                            ? "Média"
-                            : passwordStrength <= 75
-                              ? "Boa"
-                              : "Forte"}
-                    </span>
-                  </div>
-                  {passwordFeedback.length > 0 && (
-                    <ul className="space-y-1">
-                      {passwordFeedback.map((feedback, index) => (
-                        <li key={index} className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <X className="h-3 w-3 text-red-500" />
-                          {feedback}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {passwordStrength === 100 && (
-                    <p className="flex items-center gap-1 text-xs text-green-500">
-                      <Check className="h-3 w-3" /> Senha forte
-                    </p>
-                  )}
+          <form onSubmit={handleSubmit}>
+            <CardContent className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="first-name">Nome</Label>
+                  <Input
+                    id="first-name"
+                    placeholder="João"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
+                  />
                 </div>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirm-password">Confirmar Senha</Label>
-              <div className="relative">
+                <div className="grid gap-2">
+                  <Label htmlFor="last-name">Sobrenome</Label>
+                  <Input
+                    id="last-name"
+                    placeholder="Silva"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">E-mail institucional</Label>
                 <Input
-                  id="confirm-password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="nome@upe.br"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="user-type">Tipo de usuário</Label>
+                <Select
+                  value={formData.userType}
+                  onValueChange={(value) => setFormData({ ...formData, userType: value })}
+                  required
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">{showConfirmPassword ? "Esconder senha" : "Mostrar senha"}</span>
-                </Button>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione seu vínculo com a UPE" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Estudante</SelectItem>
+                    <SelectItem value="professor">Professor</SelectItem>
+                    <SelectItem value="staff">Técnico Administrativo</SelectItem>
+                    <SelectItem value="external">Comunidade Externa</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {confirmPassword && !passwordMatch && <p className="text-xs text-red-500">As senhas não coincidem</p>}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full bg-upe-blue hover:bg-upe-darkblue">Cadastrar</Button>
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+              <div className="grid gap-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showPassword ? "Esconder senha" : "Mostrar senha"}</span>
+                  </Button>
+                </div>
+                {password && (
+                  <div className="space-y-2">
+                    <Progress value={passwordStrength} className="h-2" />
+                    <div className="grid grid-cols-2 gap-2">
+                      {passwordFeedback.map((feedback, index) => (
+                        <div key={index} className="flex items-center gap-2 text-xs">
+                          <X className="h-3 w-3 text-red-500" />
+                          <span className="text-muted-foreground">{feedback}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">ou continue com</span>
+              <div className="grid gap-2">
+                <Label htmlFor="confirm-password">Confirmar Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showConfirmPassword ? "Esconder senha" : "Mostrar senha"}</span>
+                  </Button>
+                </div>
+                {confirmPassword && !passwordMatch && (
+                  <p className="text-xs text-red-500">As senhas não coincidem</p>
+                )}
               </div>
-            </div>
-            <Button variant="outline" className="w-full">
-              <Image src="/google-logo.png" alt="Google" width={18} height={18} className="mr-2" />
-              Google
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Já tem uma conta?{" "}
-              <Link href="/login" className="text-upe-blue hover:underline">
-                Entrar
-              </Link>
-            </p>
-          </CardFooter>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button
+                type="submit"
+                className="w-full bg-upe-blue hover:bg-upe-darkblue"
+                disabled={isLoading}
+              >
+                {isLoading ? "Criando conta..." : "Cadastrar"}
+              </Button>
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">ou continue com</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              >
+                <Image src="/google-logo.png" alt="Google" width={18} height={18} className="mr-2" />
+                Google
+              </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                Já tem uma conta?{" "}
+                <Link href="/login" className="text-upe-blue hover:underline">
+                  Entrar
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
         </Card>
       </motion.div>
     </div>

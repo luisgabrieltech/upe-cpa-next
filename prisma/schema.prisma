@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          Role      @default(USER)
+  resetToken    String?
+  resetTokenExp DateTime?
+  extraData     Json?     @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  responses     Response[]
+  createdForms  Form[]    @relation("FormCreator")
+}
+
+model Form {
+  id          String     @id @default(cuid())
+  title       String
+  description String
+  category    Category
+  status      FormStatus @default(DRAFT)
+  deadline    DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  createdBy   User       @relation("FormCreator", fields: [createdById], references: [id])
+  createdById String
+  questions   Question[]
+  responses   Response[]
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  text        String
+  type        QuestionType
+  required    Boolean  @default(false)
+  options     String[]
+  rows        String[]
+  columns     String[]
+  order       Int
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formId      String
+  responses   Response[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Response {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  form       Form     @relation(fields: [formId], references: [id])
+  formId     String
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+  value      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, formId, questionId])
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum FormStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  FROZEN
+}
+
+enum Category {
+  INSTITUTIONAL
+  INFRASTRUCTURE
+  TEACHING
+  COURSE
+  SERVICES
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  CHECKBOX
+  TEXT
+  SCALE
+  GRID
+  DROPDOWN
+} 

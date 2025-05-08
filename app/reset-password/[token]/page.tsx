@@ -2,9 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { motion } from "framer-motion"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,10 +11,11 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 
-export default function LoginPage() {
+export default function ResetPasswordPage({ params }: { params: { token: string } }) {
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -25,28 +24,44 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
+    if (password !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: params.token,
+          password,
+        }),
       })
 
-      if (result?.error) {
-        toast({
-          title: "Erro ao fazer login",
-          description: result.error,
-          variant: "destructive",
-        })
-        return
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Erro ao redefinir senha")
       }
 
-      router.push("/dashboard")
-      router.refresh()
+      toast({
+        title: "Senha redefinida",
+        description: "Sua senha foi alterada com sucesso",
+      })
+
+      router.push("/login")
     } catch (error) {
       toast({
-        title: "Erro ao fazer login",
-        description: "Ocorreu um erro ao tentar fazer login. Tente novamente.",
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao redefinir sua senha",
         variant: "destructive",
       })
     } finally {
@@ -57,11 +72,11 @@ export default function LoginPage() {
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Link
-        href="/"
+        href="/login"
         className="absolute left-4 top-4 md:left-8 md:top-8 flex items-center text-sm font-medium text-muted-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Voltar para o início
+        Voltar para o login
       </Link>
 
       <motion.div
@@ -71,36 +86,26 @@ export default function LoginPage() {
         className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
       >
         <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Bem-vindo(a) de volta</h1>
-          <p className="text-sm text-muted-foreground">Entre com seu e-mail e senha para acessar sua conta</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Redefinir senha</h1>
+          <p className="text-sm text-muted-foreground">
+            Digite sua nova senha abaixo
+          </p>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Entrar</CardTitle>
-            <CardDescription>Acesse o sistema da CPA-UPE</CardDescription>
+            <CardTitle className="text-xl">Nova senha</CardTitle>
+            <CardDescription>Crie uma nova senha para sua conta</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="nome@upe.br"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password">Nova senha</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -117,50 +122,43 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="confirm-password">Confirmar nova senha</Label>
+                <div className="relative">
+                  <Input
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showConfirmPassword ? "Esconder senha" : "Mostrar senha"}</span>
+                  </Button>
+                </div>
+              </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter>
               <Button
                 type="submit"
                 className="w-full bg-upe-blue hover:bg-upe-darkblue"
                 disabled={isLoading}
               >
-                {isLoading ? "Entrando..." : "Entrar"}
+                {isLoading ? "Redefinindo..." : "Redefinir senha"}
               </Button>
-              <div className="text-center">
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-muted-foreground hover:text-upe-blue"
-                >
-                  Esqueceu sua senha?
-                </Link>
-              </div>
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou continue com</span>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              >
-                <Image src="/google-logo.png" alt="Google" width={18} height={18} className="mr-2" />
-                Google
-              </Button>
-              <p className="mt-4 text-center text-sm text-muted-foreground">
-                Não tem uma conta?{" "}
-                <Link href="/register" className="text-upe-blue hover:underline">
-                  Cadastre-se
-                </Link>
-              </p>
             </CardFooter>
           </form>
         </Card>
       </motion.div>
     </div>
   )
-}
+} 

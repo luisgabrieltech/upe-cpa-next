@@ -15,9 +15,11 @@ import {
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { useSession, signOut } from "next-auth/react"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -31,14 +33,15 @@ const currentUser = {
 }
 
 const hasAdminAccess = (role: string) => {
-  return ["admin", "coordenador", "cpa"].includes(role)
+  return ["ADMIN", "COORDENADOR", "CPA"].includes(role)
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { data: session } = useSession();
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  const isAdmin = hasAdminAccess(currentUser.role)
+  const isAdmin = hasAdminAccess(session?.user?.role || "")
 
   const isMenuItemActive = (href: string) => {
     if (href === "/dashboard") {
@@ -125,22 +128,40 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="border-t p-4 flex-shrink-0">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={currentUser.avatar || "/placeholder.svg"} alt="Avatar" />
+                <AvatarImage src={session?.user?.avatar || "/placeholder.svg"} alt="Avatar" />
                 <AvatarFallback className="bg-upe-blue text-white">
-                  {currentUser.name
-                    .split(" ")
+                  {session?.user?.name
+                    ?.split(" ")
                     .map((n) => n[0])
                     .join("")
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{currentUser.name}</span>
-                <span className="text-xs text-muted-foreground">{currentUser.email}</span>
+                <span className="text-sm font-medium">{session?.user?.name}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {session?.user?.email}
+                </span>
               </div>
-              <Button variant="ghost" size="icon" className="ml-auto">
-                <Settings className="h-4 w-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="ml-auto">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/configuracoes" className="w-full">Ver perfil</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer text-red-600"
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                  >
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -217,18 +238,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="absolute bottom-4 left-4 right-4 border-t pt-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={currentUser.avatar || "/placeholder.svg"} alt="Avatar" />
+                    <AvatarImage src={session?.user?.avatar || "/placeholder.svg"} alt="Avatar" />
                     <AvatarFallback className="bg-upe-blue text-white">
-                      {currentUser.name
-                        .split(" ")
+                      {session?.user?.name
+                        ?.split(" ")
                         .map((n) => n[0])
                         .join("")
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">{currentUser.name}</span>
-                    <span className="text-xs text-muted-foreground">{currentUser.email}</span>
+                    <span className="text-sm font-medium">{session?.user?.name}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {session?.user?.email}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -260,10 +283,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </DropdownMenu>
 
             <Avatar className="h-8 w-8">
-              <AvatarImage src={currentUser.avatar || "/placeholder.svg"} alt="Avatar" />
+              <AvatarImage src={session?.user?.avatar || "/placeholder.svg"} alt="Avatar" />
               <AvatarFallback className="bg-upe-blue text-white">
-                {currentUser.name
-                  .split(" ")
+                {session?.user?.name
+                  ?.split(" ")
                   .map((n) => n[0])
                   .join("")
                   .toUpperCase()}

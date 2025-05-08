@@ -158,23 +158,19 @@ export default function NovoFormularioPage() {
     }
 
     if (editingQuestionId) {
-
-      const updatedQuestions = formData.questions.map(q => 
-        q.id === editingQuestionId ? {...currentQuestion, id: editingQuestionId} : q
+      const updatedQuestions = formData.questions.map(q =>
+        q.id === editingQuestionId ? { ...currentQuestion } : q
       );
-      
       setFormData({
         ...formData,
         questions: updatedQuestions,
       });
-      
       setEditingQuestionId(null);
     } else {
       const newQuestion = {
         ...currentQuestion,
-        id: `question-${Date.now()}`,
+        id: currentQuestion.id && currentQuestion.id.trim() !== "" ? currentQuestion.id : `question-${Date.now()}`,
       }
-
       setFormData({
         ...formData,
         questions: [...formData.questions, newQuestion],
@@ -357,6 +353,9 @@ export default function NovoFormularioPage() {
                 <div>
                   <p className="font-medium">
                     {index + 1}. {question.text}
+                    {question.id && (
+                      <span className="ml-2 text-xs text-muted-foreground">[{question.id}]</span>
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {question.type === "multiple_choice" && "Escolha única"}
@@ -768,10 +767,20 @@ export default function NovoFormularioPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="question-text">Texto da pergunta</Label>
+                    <Label htmlFor="question-id">ID personalizado da pergunta</Label>
+                    <Input
+                      id="question-id"
+                      placeholder="Ex: Q1, nota_final, etc."
+                      value={currentQuestion.id || ""}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, id: e.target.value })}
+                      maxLength={32}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="question-text">Título da pergunta</Label>
                     <Textarea
                       id="question-text"
-                      placeholder="Digite o texto da pergunta..."
+                      placeholder="Digite o título da pergunta..."
                       value={currentQuestion.text}
                       onChange={(e) => setCurrentQuestion({ ...currentQuestion, text: e.target.value })}
                     />
