@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Clock, FileText, Search } from "lucide-react"
+import Link from "next/link"
 
 export default function AvaliacoesPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -74,7 +75,11 @@ export default function AvaliacoesPage() {
                             <span>Tempo estimado: {form.estimatedTime}</span>
                           </div>
                         </div>
-                        <Button className="bg-upe-red hover:bg-upe-red/90 text-white">Responder</Button>
+                        <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" asChild>
+                          <Link href={`/dashboard/avaliacoes/responder/${form.id}`}>
+                            Responder
+                          </Link>
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -141,12 +146,14 @@ export default function AvaliacoesPage() {
 
 const availableForms = [
   {
+    id: "form-1",
     title: "Avaliação Institucional 2023.2",
     description: "Avaliação geral da instituição para o semestre 2023.2",
     deadline: "30/06/2023",
     estimatedTime: "15 minutos",
   },
   {
+    id: "form-2",
     title: "Avaliação de Infraestrutura",
     description: "Avaliação das instalações físicas e recursos tecnológicos",
     deadline: "15/06/2023",
@@ -156,18 +163,21 @@ const availableForms = [
 
 const completedForms = [
   {
+    id: "form-3",
     title: "Avaliação Institucional 2022.2",
     description: "Avaliação geral da instituição para o semestre 2022.2",
     completedDate: "15/12/2022",
     resultsAvailable: true,
   },
   {
+    id: "form-4",
     title: "Avaliação de Infraestrutura 2022",
     description: "Avaliação das instalações físicas e recursos tecnológicos",
     completedDate: "10/12/2022",
     resultsAvailable: true,
   },
   {
+    id: "form-5",
     title: "Avaliação Docente 2022.2",
     description: "Avaliação do corpo docente pelos discentes",
     completedDate: "05/12/2022",
