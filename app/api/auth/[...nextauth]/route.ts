@@ -87,6 +87,14 @@ export const authOptions: NextAuthOptions = {
           role: token.role
         }
       }
+    },
+    async redirect({ url, baseUrl }) {
+      // Se a URL contiver magic=true, redireciona para o dashboard
+      if (url.includes("magic=true")) {
+        return `${baseUrl}/dashboard`
+      }
+      // Caso contrário, mantém o comportamento padrão
+      return url.startsWith(baseUrl) ? url : baseUrl
     }
   }
 }
