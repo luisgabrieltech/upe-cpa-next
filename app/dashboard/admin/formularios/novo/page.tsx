@@ -25,12 +25,13 @@ import React from "react"
 
 interface Question {
   id: string
-  type: "multiple_choice" | "checkbox" | "text" | "scale" | "grid" | "dropdown"
+  type: "multiple_choice" | "checkbox" | "text" | "scale" | "grid" | "dropdown" | "section"
   text: string
   required: boolean
   options: string[]
   rows?: string[]
   columns?: string[]
+  description?: string
   conditional?: {
     dependsOn: string
     operator: "OR" | "AND"
@@ -64,6 +65,7 @@ function normalizeQuestion(q: any): Question {
     options: Array.isArray(q.options) ? q.options : [],
     rows: Array.isArray(q.rows) ? q.rows : [],
     columns: Array.isArray(q.columns) ? q.columns : [],
+    description: q.description,
     conditional: q.conditional
       ? {
           dependsOn: q.conditional.dependsOn || "",
@@ -407,7 +409,8 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
               .replace("text", "TEXT")
               .replace("scale", "SCALE")
               .replace("grid", "GRID")
-              .replace("dropdown", "DROPDOWN"),
+              .replace("dropdown", "DROPDOWN")
+              .replace("section", "SECTION"),
             required: q.required,
             options: q.options || [],
             rows: q.rows || [],
@@ -429,63 +432,16 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   const QuestionsList = React.memo(() => {
     return (
       <div className="space-y-4">
-        {formData.questions.map((question, index) => (
-          <div 
-            key={question.id}
-            className="flex items-start gap-2 p-4 border rounded-md"
-          >
-            <div className="flex-1">
-              <div className="flex items-start justify-between">
+        {formData.questions.map((question, index) => {
+          const realIndex = formData.questions.slice(0, index).filter(q => q.type !== "section").length;
+          if (question.type === "section") {
+            return (
+              <div key={question.id} className="py-4 px-2 bg-muted/40 rounded border mb-2 flex items-start justify-between group">
                 <div>
-                  <p className="font-medium">
-                    {index + 1}. {question.text}
-                    {question.id && (
-                      <span className="ml-2 text-xs text-muted-foreground">[{question.id}]</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {question.type === "multiple_choice" && "Escolha única"}
-                    {question.type === "checkbox" && "Múltipla escolha"}
-                    {question.type === "text" && "Resposta de texto"}
-                    {question.type === "scale" && "Escala de avaliação"}
-                    {question.type === "grid" && "Grade"}
-                    {question.type === "dropdown" && "Lista suspensa"}
-                    {question.required && " • Obrigatória"}
-                    {question.conditional && " • Condicional"}
-                  </p>
-
-                  {question.conditional && (
-                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 italic">
-                      <span>Exibida se:</span>
-                      {(() => {
-                        const dependentQuestion = formData.questions.find(q => q.id === question.conditional?.dependsOn);
-                        if (!dependentQuestion) return <span>Configuração incompleta</span>;
-                        
-                        const conditionsText = question.conditional.conditions.map((condition, idx) => (
-                          <span key={idx} className="font-medium">
-                            {idx > 0 && <span className="mx-1">{question.conditional?.operator === "AND" ? "E" : "OU"}</span>}
-                            <span className="bg-muted px-1 rounded">
-                              {condition.value}
-                            </span>
-                            {condition.type === "equals" ? " for igual" : " estiver contido"}
-                          </span>
-                        ));
-                        
-                        return (
-                          <>
-                            <span className="font-medium">
-                              {dependentQuestion.text.length > 20 
-                                ? dependentQuestion.text.substring(0, 20) + "..." 
-                                : dependentQuestion.text}
-                            </span>
-                            {conditionsText}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
+                  <div className="font-bold text-upe-blue text-lg">{question.text || "(Seção sem título)"}</div>
+                  {question.description && <div className="text-muted-foreground text-sm mt-1">{question.description}</div>}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -518,103 +474,200 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                     className="text-upe-red hover:text-upe-red/90 hover:bg-upe-red/10"
                     onClick={() => removeQuestion(question.id)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"/><path d="M19 6l-1.5 16.5a2 2 0 0 1-2 1.5h-7a2 2 0 0 1-2-1.5L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                   </Button>
                 </div>
               </div>
-
-              {(question.type === "multiple_choice" || question.type === "checkbox") && (
-                <div className="mt-2 space-y-1">
-                  {question.options.map((option, optIndex) => (
-                    <div key={optIndex} className="flex items-center gap-2">
-                      {question.type === "multiple_choice" ? (
-                        <div className="h-4 w-4 rounded-full border border-muted-foreground" />
-                      ) : (
-                        <div className="h-4 w-4 rounded-sm border border-muted-foreground" />
+            );
+          }
+          return (
+            <div 
+              key={question.id}
+              className="flex items-start gap-2 p-4 border rounded-md"
+            >
+              <div className="flex-1">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {realIndex + 1}. {question.text}
+                      {question.id && (
+                        <span className="ml-2 text-xs text-muted-foreground">[{question.id}]</span>
                       )}
-                      <span className="text-sm">{option}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {question.type === "multiple_choice" && "Escolha única"}
+                      {question.type === "checkbox" && "Múltipla escolha"}
+                      {question.type === "text" && "Resposta de texto"}
+                      {question.type === "scale" && "Escala de avaliação"}
+                      {question.type === "grid" && "Grade"}
+                      {question.type === "dropdown" && "Lista suspensa"}
+                      {question.type === "section" && "Seção"}
+                      {question.required && " • Obrigatória"}
+                      {question.conditional && " • Condicional"}
+                    </p>
 
-              {question.type === "dropdown" && (
-                <div className="mt-2">
-                  <div className="h-8 bg-muted/20 rounded-md px-3 flex items-center text-sm text-muted-foreground">
-                    <span>Lista suspensa com {question.options.length} opções</span>
+                    {question.conditional && (
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 italic">
+                        <span>Exibida se:</span>
+                        {(() => {
+                          const dependentQuestion = formData.questions.find(q => q.id === question.conditional?.dependsOn);
+                          if (!dependentQuestion) return <span>Configuração incompleta</span>;
+                          
+                          const conditionsText = question.conditional.conditions.map((condition, idx) => (
+                            <span key={idx} className="font-medium">
+                              {idx > 0 && <span className="mx-1">{question.conditional?.operator === "AND" ? "E" : "OU"}</span>}
+                              <span className="bg-muted px-1 rounded">
+                                {condition.value}
+                              </span>
+                              {condition.type === "equals" ? " for igual" : " estiver contido"}
+                            </span>
+                          ));
+                          
+                          return (
+                            <>
+                              <span className="font-medium">
+                                {dependentQuestion.text.length > 20 
+                                  ? dependentQuestion.text.substring(0, 20) + "..." 
+                                  : dependentQuestion.text}
+                              </span>
+                              {conditionsText}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground"
+                      onClick={() => moveQuestionUp(index)}
+                      disabled={index === 0}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground"
+                      onClick={() => moveQuestionDown(index)}
+                      disabled={index === formData.questions.length - 1}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => editQuestion(question.id)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-upe-red hover:text-upe-red/90 hover:bg-upe-red/10"
+                      onClick={() => removeQuestion(question.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              )}
 
-              {question.type === "text" && <div className="mt-2 h-8 bg-muted/20 rounded-md" />}
-
-              {question.type === "grid" && (
-                <div className="mt-2 bg-muted/10 p-2 rounded-md">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Grade com {question.rows?.length || 0} linhas e {question.columns?.length || 0} colunas
-                  </div>
-                  <div className="overflow-hidden">
-                    <table className="w-full border-collapse text-xs">
-                      <thead>
-                        <tr>
-                          <th className="p-1 border border-muted-foreground/30 bg-muted/20"></th>
-                          {question.columns?.slice(0, 3).map((col, i) => (
-                            <th key={i} className="p-1 border border-muted-foreground/30 bg-muted/20 text-center">
-                              {col.length > 10 ? col.substring(0, 10) + '...' : col}
-                            </th>
-                          ))}
-                          {(question.columns?.length || 0) > 3 && (
-                            <th className="p-1 border border-muted-foreground/30 bg-muted/20 text-center">...</th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {question.rows?.slice(0, 2).map((row, i) => (
-                          <tr key={i}>
-                            <td className="p-1 border border-muted-foreground/30 font-medium">
-                              {row.length > 10 ? row.substring(0, 10) + '...' : row}
-                            </td>
-                            {question.columns?.slice(0, 3).map((_, j) => (
-                              <td key={j} className="p-1 border border-muted-foreground/30 text-center">
-                                <div className="h-3 w-3 rounded-full border border-muted-foreground mx-auto"></div>
-                              </td>
-                            ))}
-                            {(question.columns?.length || 0) > 3 && (
-                              <td className="p-1 border border-muted-foreground/30 text-center">...</td>
-                            )}
-                          </tr>
-                        ))}
-                        {(question.rows?.length || 0) > 2 && (
-                          <tr>
-                            <td className="p-1 border border-muted-foreground/30 text-center">...</td>
-                            {question.columns?.slice(0, 3).map((_, j) => (
-                              <td key={j} className="p-1 border border-muted-foreground/30 text-center">...</td>
-                            ))}
-                            {(question.columns?.length || 0) > 3 && (
-                              <td className="p-1 border border-muted-foreground/30 text-center">...</td>
-                            )}
-                          </tr>
+                {(question.type === "multiple_choice" || question.type === "checkbox") && (
+                  <div className="mt-2 space-y-1">
+                    {question.options.map((option, optIndex) => (
+                      <div key={optIndex} className="flex items-center gap-2">
+                        {question.type === "multiple_choice" ? (
+                          <div className="h-4 w-4 rounded-full border border-muted-foreground" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-sm border border-muted-foreground" />
                         )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {question.type === "scale" && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-sm">1</span>
-                  <div className="flex-1 flex items-center justify-between">
-                    {[1, 2, 3, 4, 5].map((num) => (
-                      <div key={num} className="h-4 w-4 rounded-full border border-muted-foreground" />
+                        <span className="text-sm">{option}</span>
+                      </div>
                     ))}
                   </div>
-                  <span className="text-sm">5</span>
-                </div>
-              )}
+                )}
+
+                {question.type === "dropdown" && (
+                  <div className="mt-2">
+                    <div className="h-8 bg-muted/20 rounded-md px-3 flex items-center text-sm text-muted-foreground">
+                      <span>Lista suspensa com {question.options.length} opções</span>
+                    </div>
+                  </div>
+                )}
+
+                {question.type === "text" && <div className="mt-2 h-8 bg-muted/20 rounded-md" />}
+
+                {question.type === "grid" && (
+                  <div className="mt-2 bg-muted/10 p-2 rounded-md">
+                    <div className="text-sm text-muted-foreground mb-1">
+                      Grade com {question.rows?.length || 0} linhas e {question.columns?.length || 0} colunas
+                    </div>
+                    <div className="overflow-hidden">
+                      <table className="w-full border-collapse text-xs">
+                        <thead>
+                          <tr>
+                            <th className="p-1 border border-muted-foreground/30 bg-muted/20"></th>
+                            {question.columns?.slice(0, 3).map((col, i) => (
+                              <th key={i} className="p-1 border border-muted-foreground/30 bg-muted/20 text-center">
+                                {col.length > 10 ? col.substring(0, 10) + '...' : col}
+                              </th>
+                            ))}
+                            {(question.columns?.length || 0) > 3 && (
+                              <th className="p-1 border border-muted-foreground/30 bg-muted/20 text-center">...</th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {question.rows?.slice(0, 2).map((row, i) => (
+                            <tr key={i}>
+                              <td className="p-1 border border-muted-foreground/30 font-medium">
+                                {row.length > 10 ? row.substring(0, 10) + '...' : row}
+                              </td>
+                              {question.columns?.slice(0, 3).map((_, j) => (
+                                <td key={j} className="p-1 border border-muted-foreground/30 text-center">
+                                  <div className="h-3 w-3 rounded-full border border-muted-foreground mx-auto"></div>
+                                </td>
+                              ))}
+                              {(question.columns?.length || 0) > 3 && (
+                                <td className="p-1 border border-muted-foreground/30 text-center">...</td>
+                              )}
+                            </tr>
+                          ))}
+                          {(question.rows?.length || 0) > 2 && (
+                            <tr>
+                              <td className="p-1 border border-muted-foreground/30 text-center">...</td>
+                              {question.columns?.slice(0, 3).map((_, j) => (
+                                <td key={j} className="p-1 border border-muted-foreground/30 text-center">...</td>
+                              ))}
+                              {(question.columns?.length || 0) > 3 && (
+                                <td className="p-1 border border-muted-foreground/30 text-center">...</td>
+                              )}
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {question.type === "scale" && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-sm">1</span>
+                    <div className="flex-1 flex items-center justify-between">
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <div key={num} className="h-4 w-4 rounded-full border border-muted-foreground" />
+                      ))}
+                    </div>
+                    <span className="text-sm">5</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   });
@@ -896,6 +949,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                         <SelectItem value="scale">Escala de avaliação</SelectItem>
                         <SelectItem value="grid">Grade</SelectItem>
                         <SelectItem value="dropdown">Lista suspensa</SelectItem>
+                        <SelectItem value="section">Seção</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1294,10 +1348,57 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                     {formData.questions.map((question, index) => {
                       if (!shouldShowQuestion(question)) return null;
                       
+                      const realIndex = formData.questions.slice(0, index).filter(q => q.type !== "section").length;
+                      if (question.type === "section") {
+                        return (
+                          <div key={question.id} className="py-4 px-2 bg-muted/40 rounded border mb-2 flex items-start justify-between group">
+                            <div>
+                              <div className="font-bold text-upe-blue text-lg">{question.text || "(Seção sem título)"}</div>
+                              {question.description && <div className="text-muted-foreground text-sm mt-1">{question.description}</div>}
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground"
+                                onClick={() => moveQuestionUp(index)}
+                                disabled={index === 0}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground"
+                                onClick={() => moveQuestionDown(index)}
+                                disabled={index === formData.questions.length - 1}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={() => editQuestion(question.id)}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-upe-red hover:text-upe-red/90 hover:bg-upe-red/10"
+                                onClick={() => removeQuestion(question.id)}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"/><path d="M19 6l-1.5 16.5a2 2 0 0 1-2 1.5h-7a2 2 0 0 1-2-1.5L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      }
                       return (
                         <div key={question.id} className="space-y-3">
                           <h3 className="font-medium">
-                            {index + 1}. {question.text}
+                            {realIndex + 1}. {question.text}
                             {question.required && <span className="text-upe-red ml-1">*</span>}
                           </h3>
 

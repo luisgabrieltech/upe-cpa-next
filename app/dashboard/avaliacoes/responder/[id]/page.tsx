@@ -17,12 +17,13 @@ import { toast } from "sonner"
 interface Question {
   id: string
   text: string
-  type: "multiple_choice" | "checkbox" | "text" | "scale" | "grid" | "dropdown"
+  type: "multiple_choice" | "checkbox" | "text" | "scale" | "grid" | "dropdown" | "section"
   required: boolean
   options?: string[]
   rows?: string[]
   columns?: string[]
   conditional?: any
+  description?: string
 }
 
 interface FormData {
@@ -175,13 +176,25 @@ export default function ResponderAvaliacaoPage() {
           {formData.questions.map((question, index) => {
             const type = (question.type || "").toLowerCase();
             if (!shouldShowQuestion(question, responses)) return null;
+            const realIndex = formData.questions.slice(0, index).filter((q: any) => (q.type || "").toLowerCase() !== "section").length;
+            if (type === "section") {
+              const section = question as Question & { description?: string };
+              return (
+                <div key={section.id} className="py-4 px-2 bg-muted/40 rounded border mb-2">
+                  <div className="font-bold text-upe-blue text-lg">{section.text || "(Seção sem título)"}</div>
+                  {section.description && (
+                    <div className="text-muted-foreground text-sm mt-1">{section.description}</div>
+                  )}
+                </div>
+              );
+            }
             return (
               <Card key={question.id}>
                 <CardContent className="p-6">
                   <div className="flex flex-col space-y-4">
                     <div>
                       <Label className="text-base font-medium text-upe-blue">
-                        {index + 1}. {question.text}
+                        {realIndex + 1}. {question.text}
                         {question.required && <span className="text-red-500 ml-1">*</span>}
                       </Label>
                     </div>

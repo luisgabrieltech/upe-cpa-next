@@ -77,12 +77,21 @@ export default function PreviewFormularioPage() {
         <div className="space-y-4">
           {formData.questions.map((question: any, index: number) => {
             const type = (question.type || "").toLowerCase();
+            const realIndex = formData.questions.slice(0, index).filter((q: any) => (q.type || "").toLowerCase() !== "section").length;
+            if (type === "section") {
+              return (
+                <div key={question.id} className="py-4 px-2 bg-muted/40 rounded border mb-2">
+                  <div className="font-bold text-upe-blue text-lg">{question.text || "(Seção sem título)"}</div>
+                  {question.description && <div className="text-muted-foreground text-sm mt-1">{question.description}</div>}
+                </div>
+              );
+            }
             return (
               <Card key={question.id}>
                 <CardContent className="p-6">
                   <div>
                     <Label className="text-base font-medium text-upe-blue">
-                      {index + 1}. {question.text}
+                      {realIndex + 1}. {question.text}
                       {question.required && <span className="text-red-500 ml-1">*</span>}
                     </Label>
                   </div>
