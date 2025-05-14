@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,7 +44,42 @@ export default function AdminUsuariosPage() {
   const [roleFilter, setRoleFilter] = useState("all")
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false)
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [selectedUser, setSelectedUser] = useState<any | null>(null)
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false)
+  const [emailSubject, setEmailSubject] = useState("")
+  const [emailMessage, setEmailMessage] = useState("")
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState<string | null>(null)
+  const [resetPasswordError, setResetPasswordError] = useState<string | null>(null)
+  const [statusLoading, setStatusLoading] = useState<string | null>(null)
+  const [statusError, setStatusError] = useState<string | null>(null)
+  const [statusSuccess, setStatusSuccess] = useState<string | null>(null)
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
+  const [roleLoading, setRoleLoading] = useState(false)
+  const [roleError, setRoleError] = useState<string | null>(null)
+  const [selectedRole, setSelectedRole] = useState<string>("")
+
+  // Função para buscar usuários (fora do useEffect)
+  const fetchUsers = async () => {
+    setLoading(true)
+    const res = await fetch("/api/user")
+    if (res.ok) {
+      const data = await res.json()
+      setUsers(data)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
 
   // Filtragem de usuários
   const filteredUsers = users.filter((user) => {
@@ -67,22 +102,142 @@ export default function AdminUsuariosPage() {
   const handleResetPasswordClick = (userId: string) => {
     setSelectedUserId(userId)
     setIsResetPasswordDialogOpen(true)
+    setResetPasswordSuccess(null)
+    setResetPasswordError(null)
+  }
+
+  // Função para abrir o diálogo de perfil do usuário
+  const handleViewProfile = (user: any) => {
+    setSelectedUser(user)
+    setIsProfileDialogOpen(true)
+  }
+
+  // Função para abrir o diálogo de definição de cargo
+  const handleRoleClick = (user: any) => {
+    setSelectedUser(user)
+    setSelectedRole(user.role)
+    setIsRoleDialogOpen(true)
+    setRoleError(null)
   }
 
   // Função para confirmar a exclusão
-  const confirmDelete = () => {
-    // Aqui seria implementada a lógica para excluir o usuário
-    console.log(`Excluindo usuário ${selectedUserId}`)
-    setIsDeleteDialogOpen(false)
-    setSelectedUserId(null)
+  const confirmDelete = async () => {
+    if (!selectedUserId) return
+    try {
+      const res = await fetch(`/api/user/${selectedUserId}`, {
+        method: "DELETE",
+      })
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== selectedUserId))
+        setIsDeleteDialogOpen(false)
+        setSelectedUserId(null)
+      } else {
+        const data = await res.json()
+        alert(data.message || "Erro ao excluir usuário.")
+      }
+    } catch (error) {
+      alert("Erro ao excluir usuário.")
+    }
   }
 
   // Função para confirmar a redefinição de senha
-  const confirmResetPassword = () => {
-    // Aqui seria implementada a lógica para redefinir a senha
-    console.log(`Redefinindo senha do usuário ${selectedUserId}`)
-    setIsResetPasswordDialogOpen(false)
-    setSelectedUserId(null)
+  const confirmResetPassword = async () => {
+    if (!selectedUserId) return
+    setResetPasswordLoading(true)
+    setResetPasswordSuccess(null)
+    setResetPasswordError(null)
+    try {
+      const res = await fetch(`/api/user/${selectedUserId}/reset-password`, {
+        method: "POST",
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setResetPasswordSuccess("E-mail de redefinição enviado com sucesso!")
+      } else {
+        setResetPasswordError(data.message || "Erro ao enviar e-mail de redefinição.")
+      }
+    } catch (error) {
+      setResetPasswordError("Erro ao enviar e-mail de redefinição.")
+    } finally {
+      setResetPasswordLoading(false)
+    }
+  }
+
+  // Função para ativar usuário
+  const handleActivateUser = async (userId: string) => {
+    setStatusLoading(userId)
+    setStatusError(null)
+    setStatusSuccess(null)
+    try {
+      const res = await fetch(`/api/user/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: true }),
+      })
+      if (res.ok) {
+        setStatusSuccess("Usuário ativado com sucesso!")
+        await fetchUsers() // Atualiza a lista após alteração
+      } else {
+        const data = await res.json()
+        setStatusError(data.message || "Erro ao ativar usuário.")
+      }
+    } catch (error) {
+      setStatusError("Erro ao ativar usuário.")
+    } finally {
+      setStatusLoading(null)
+      setTimeout(() => setStatusSuccess(null), 2000)
+    }
+  }
+
+  // Função para inativar usuário
+  const handleDeactivateUser = async (userId: string) => {
+    setStatusLoading(userId)
+    setStatusError(null)
+    setStatusSuccess(null)
+    try {
+      const res = await fetch(`/api/user/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: false }),
+      })
+      if (res.ok) {
+        setStatusSuccess("Usuário inativado com sucesso!")
+        await fetchUsers() // Atualiza a lista após alteração
+      } else {
+        const data = await res.json()
+        setStatusError(data.message || "Erro ao inativar usuário.")
+      }
+    } catch (error) {
+      setStatusError("Erro ao inativar usuário.")
+    } finally {
+      setStatusLoading(null)
+      setTimeout(() => setStatusSuccess(null), 2000)
+    }
+  }
+
+  // Função para confirmar alteração de cargo
+  const confirmRoleChange = async () => {
+    if (!selectedUser) return
+    setRoleLoading(true)
+    setRoleError(null)
+    try {
+      const res = await fetch(`/api/user/${selectedUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: selectedRole }),
+      })
+      if (res.ok) {
+        await fetchUsers()
+        setIsRoleDialogOpen(false)
+      } else {
+        const data = await res.json()
+        setRoleError(data.message || "Erro ao alterar cargo.")
+      }
+    } catch (error) {
+      setRoleError("Erro ao alterar cargo.")
+    } finally {
+      setRoleLoading(false)
+    }
   }
 
   const container = {
@@ -194,7 +349,7 @@ export default function AdminUsuariosPage() {
                                 <AvatarFallback className="bg-upe-blue text-white">
                                   {user.name
                                     .split(" ")
-                                    .map((n) => n[0])
+                                    .map((n: string) => n[0])
                                     .join("")
                                     .toUpperCase()}
                                 </AvatarFallback>
@@ -226,26 +381,26 @@ export default function AdminUsuariosPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleViewProfile(user)}>
                                   <User className="mr-2 h-4 w-4" />
                                   <span>Ver Perfil</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Mail className="mr-2 h-4 w-4" />
-                                  <span>Enviar E-mail</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleResetPasswordClick(user.id)}>
                                   <Key className="mr-2 h-4 w-4" />
                                   <span>Redefinir Senha</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleClick(user)}>
+                                  <User className="mr-2 h-4 w-4 text-upe-blue" />
+                                  <span>Definir Cargo</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 {user.active ? (
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDeactivateUser(user.id)} disabled={statusLoading === user.id}>
                                     <Lock className="mr-2 h-4 w-4 text-yellow-500" />
                                     <span>Desativar Usuário</span>
                                   </DropdownMenuItem>
                                 ) : (
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleActivateUser(user.id)} disabled={statusLoading === user.id}>
                                     <Unlock className="mr-2 h-4 w-4 text-green-500" />
                                     <span>Ativar Usuário</span>
                                   </DropdownMenuItem>
@@ -307,7 +462,14 @@ export default function AdminUsuariosPage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <Dialog open={isResetPasswordDialogOpen} onOpenChange={(open) => {
+          setIsResetPasswordDialogOpen(open)
+          if (!open) {
+            setResetPasswordSuccess(null)
+            setResetPasswordError(null)
+            setResetPasswordLoading(false)
+          }
+        }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -321,13 +483,136 @@ export default function AdminUsuariosPage() {
             </DialogHeader>
             <div className="py-4">
               <p className="text-sm font-medium">Tem certeza que deseja redefinir a senha deste usuário?</p>
+              {resetPasswordSuccess && (
+                <div className="text-green-600 text-sm mt-2">{resetPasswordSuccess}</div>
+              )}
+              {resetPasswordError && (
+                <div className="text-red-600 text-sm mt-2">{resetPasswordError}</div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsResetPasswordDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsResetPasswordDialogOpen(false)} disabled={resetPasswordLoading}>
                 Cancelar
               </Button>
-              <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" onClick={confirmResetPassword}>
-                Sim, redefinir senha
+              <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" onClick={confirmResetPassword} disabled={resetPasswordLoading || !!resetPasswordSuccess}>
+                {resetPasswordLoading ? "Enviando..." : resetPasswordSuccess ? "E-mail enviado" : "Sim, redefinir senha"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Perfil do Usuário
+              </DialogTitle>
+              <DialogDescription>Visão detalhada do usuário selecionado</DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="space-y-4 py-2">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={selectedUser.avatar || "/placeholder.svg"} alt={selectedUser.name} />
+                    <AvatarFallback className="bg-upe-blue text-white text-2xl">
+                      {selectedUser.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-bold text-lg">{selectedUser.name}</div>
+                    <div className="text-muted-foreground text-sm">{selectedUser.email}</div>
+                    <RoleBadge role={selectedUser.role} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="font-medium">ID:</span> {selectedUser.id}</div>
+                  <div><span className="font-medium">Criado em:</span> {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : "-"}</div>
+                  <div><span className="font-medium">Atualizado em:</span> {selectedUser.updatedAt ? new Date(selectedUser.updatedAt).toLocaleString() : "-"}</div>
+                </div>
+                {selectedUser.extraData && (
+                  <div className="grid grid-cols-2 gap-2 text-sm border-t pt-2 mt-2">
+                    {selectedUser.extraData.course && (
+                      <div><span className="font-medium">Curso:</span> {selectedUser.extraData.course}</div>
+                    )}
+                    {selectedUser.extraData.campus && (
+                      <div><span className="font-medium">Campus:</span> {selectedUser.extraData.campus}</div>
+                    )}
+                    {selectedUser.extraData.registration && (
+                      <div><span className="font-medium">Matrícula:</span> {selectedUser.extraData.registration}</div>
+                    )}
+                    {selectedUser.extraData.phone && (
+                      <div><span className="font-medium">Telefone:</span> {selectedUser.extraData.phone}</div>
+                    )}
+                  </div>
+                )}
+                {/* Respostas e formulários respondidos */}
+                {selectedUser.responses && selectedUser.responses.length > 0 && (
+                  <div className="mt-4 border-t pt-2">
+                    <div className="font-semibold mb-2">Formulários Respondidos</div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {Object.entries(
+                        selectedUser.responses.reduce((acc: any, resp: any) => {
+                          const formId = resp.form.id
+                          if (!acc[formId]) acc[formId] = { title: resp.form.title, responses: [] }
+                          acc[formId].responses.push(resp)
+                          return acc
+                        }, {})
+                      ).map(([formId, data]: any) => (
+                        <div key={formId} className="border rounded p-2">
+                          <div className="font-medium text-upe-blue">{data.title}</div>
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {data.responses.length} resposta(s) - Última: {new Date(data.responses[data.responses.length-1].createdAt).toLocaleString()}
+                          </div>
+                          <ul className="text-xs pl-4 list-disc">
+                            {data.responses.map((resp: any) => (
+                              <li key={resp.id}>
+                                <span className="font-medium">{resp.question.text}:</span> {resp.value}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Feedback visual para ativação/inativação */}
+                {statusSuccess && <div className="text-green-600 text-sm text-center mt-2">{statusSuccess}</div>}
+                {statusError && <div className="text-red-600 text-sm text-center mt-2">{statusError}</div>}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsProfileDialogOpen(false)}>
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Definir Cargo</DialogTitle>
+              <DialogDescription>Escolha o novo cargo para o usuário <b>{selectedUser?.name}</b>.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o cargo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">Administrador</SelectItem>
+                  <SelectItem value="USER">Usuário</SelectItem>
+                </SelectContent>
+              </Select>
+              {roleError && <div className="text-red-600 text-sm">{roleError}</div>}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)} disabled={roleLoading}>
+                Cancelar
+              </Button>
+              <Button className="bg-upe-blue text-white" onClick={confirmRoleChange} loading={roleLoading}>
+                Salvar
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -355,87 +640,3 @@ function RoleBadge({ role }: { role: string }) {
       return <Badge variant="outline">{role}</Badge>
   }
 }
-
-// Dados de exemplo
-const users = [
-  {
-    id: "user-1",
-    name: "Maria Oliveira",
-    email: "maria.oliveira@upe.br",
-    role: "coordenador",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-2",
-    name: "Carlos Santos",
-    email: "carlos.santos@upe.br",
-    role: "admin",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-3",
-    name: "Ana Silva",
-    email: "ana.silva@upe.br",
-    role: "cpa",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-4",
-    name: "Pedro Costa",
-    email: "pedro.costa@upe.br",
-    role: "admin",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-5",
-    name: "Juliana Ferreira",
-    email: "juliana.ferreira@upe.br",
-    role: "professor",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-6",
-    name: "Roberto Lima",
-    email: "roberto.lima@upe.br",
-    role: "professor",
-    active: false,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-7",
-    name: "Fernanda Almeida",
-    email: "fernanda.almeida@upe.br",
-    role: "aluno",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-8",
-    name: "Lucas Martins",
-    email: "lucas.martins@upe.br",
-    role: "aluno",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-9",
-    name: "Mariana Souza",
-    email: "mariana.souza@upe.br",
-    role: "tecnico",
-    active: true,
-    avatar: "/avatar.png",
-  },
-  {
-    id: "user-10",
-    name: "José Pereira",
-    email: "jose.pereira@upe.br",
-    role: "tecnico",
-    active: false,
-    avatar: "/avatar.png",
-  },
-]

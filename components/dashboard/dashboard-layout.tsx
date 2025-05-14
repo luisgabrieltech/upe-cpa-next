@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -40,6 +40,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { data: session } = useSession();
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  const [pendingCount, setPendingCount] = useState<number>(0)
+
+  useEffect(() => {
+    const fetchPending = async () => {
+      if (!session?.user?.id) return;
+      const formsRes = await fetch("/api/forms?available=true")
+      const formsData = formsRes.ok ? await formsRes.json() : []
+      const respRes = await fetch("/api/responses?userId=" + session.user.id)
+      const respData = respRes.ok ? await respRes.json() : []
+      const respondedFormIds = new Set(respData.map((r: any) => r.formId))
+      const pending = formsData.filter((f: any) => f.externalStatus === 'AVAILABLE' && !respondedFormIds.has(f.id))
+      setPendingCount(pending.length)
+    }
+    fetchPending()
+  }, [session?.user?.id])
 
   const isAdmin = hasAdminAccess(session?.user?.role || "")
 
@@ -93,7 +109,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                  {item.badge && <Badge className="ml-auto bg-upe-red text-white">{item.badge}</Badge>}
+                  {item.label === "Avaliações" && pendingCount > 0 && (
+                    <Badge className="ml-auto bg-upe-red text-white">{pendingCount}</Badge>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -156,7 +174,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer text-red-600"
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={() => signOut({ callbackUrl: "/" })}
                   >
                     Sair
                   </DropdownMenuItem>
@@ -203,7 +221,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   >
                     <item.icon className="h-5 w-5" />
                     <span>{item.label}</span>
-                    {item.badge && <Badge className="ml-auto bg-upe-red text-white">{item.badge}</Badge>}
+                    {item.label === "Avaliações" && pendingCount > 0 && (
+                      <Badge className="ml-auto bg-upe-red text-white">{pendingCount}</Badge>
+                    )}
                   </Link>
                 ))}
               </nav>
@@ -332,11 +352,12 @@ const adminItems = [
     href: "/dashboard/admin",
     icon: BarChart3,
   },
-  {
+  /*{
     label: "Relatórios",
     href: "/dashboard/admin/relatorios",
     icon: BarChart3,
-  },
+    disabled: true,
+  },*/
   {
     label: "Gestão de Formulários",
     href: "/dashboard/admin/formularios",

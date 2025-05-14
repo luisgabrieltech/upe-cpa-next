@@ -24,6 +24,7 @@ export default function RegisterPage() {
   const [passwordMatch, setPasswordMatch] = useState(true)
   const [passwordFeedback, setPasswordFeedback] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -78,23 +79,38 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setFormError(null)
+
+    // Validação do formato do email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setFormError("Por favor, insira um endereço de email válido")
+      setIsLoading(false)
+      return
+    }
+
+    // Validação de campos obrigatórios
+    if (!formData.firstName || !formData.lastName || !formData.userType) {
+      setFormError("Por favor, preencha todos os campos obrigatórios")
+      setIsLoading(false)
+      return
+    }
+
+    // Validação de senha
+    if (!password) {
+      setFormError("Por favor, insira uma senha")
+      setIsLoading(false)
+      return
+    }
 
     if (!passwordMatch) {
-      toast({
-        title: "Erro no cadastro",
-        description: "As senhas não coincidem",
-        variant: "destructive",
-      })
+      setFormError("As senhas não coincidem")
       setIsLoading(false)
       return
     }
 
     if (passwordStrength < 100) {
-      toast({
-        title: "Erro no cadastro",
-        description: "A senha não atende aos requisitos mínimos de segurança",
-        variant: "destructive",
-      })
+      setFormError("A senha não atende aos requisitos mínimos de segurança")
       setIsLoading(false)
       return
     }
@@ -115,13 +131,16 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.message || "Erro ao criar conta")
+        let errorMessage = data.message || "Erro ao criar conta"
+        if (data.message?.includes("email")) {
+          errorMessage = "Este email já está cadastrado"
+        } else if (data.message?.includes("password")) {
+          errorMessage = "A senha não atende aos requisitos de segurança"
+        }
+        setFormError(errorMessage)
+        setIsLoading(false)
+        return
       }
-
-      toast({
-        title: "Conta criada com sucesso",
-        description: "Você será redirecionado para o login",
-      })
 
       // Fazer login automático após o registro
       const result = await signIn("credentials", {
@@ -131,6 +150,7 @@ export default function RegisterPage() {
       })
 
       if (result?.error) {
+        setFormError("Sua conta foi criada, mas houve um erro ao fazer login. Por favor, faça login manualmente.")
         router.push("/login")
         return
       }
@@ -138,11 +158,7 @@ export default function RegisterPage() {
       router.push("/dashboard")
       router.refresh()
     } catch (error) {
-      toast({
-        title: "Erro ao criar conta",
-        description: error instanceof Error ? error.message : "Ocorreu um erro ao criar sua conta",
-        variant: "destructive",
-      })
+      setFormError(error instanceof Error ? error.message : "Ocorreu um erro ao criar sua conta")
     } finally {
       setIsLoading(false)
     }
@@ -291,6 +307,11 @@ export default function RegisterPage() {
                   <p className="text-xs text-red-500">As senhas não coincidem</p>
                 )}
               </div>
+              {formError && (
+                <div className="text-red-600 text-sm text-center mb-2">
+                  {formError}
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button
@@ -299,23 +320,6 @@ export default function RegisterPage() {
                 disabled={isLoading}
               >
                 {isLoading ? "Criando conta..." : "Cadastrar"}
-              </Button>
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou continue com</span>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              >
-                <Image src="/google-logo.png" alt="Google" width={18} height={18} className="mr-2" />
-                Google
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 Já tem uma conta?{" "}

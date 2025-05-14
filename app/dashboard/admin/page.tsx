@@ -17,8 +17,13 @@ import {
   User,
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useEffect, useState } from "react"
 
 export default function AdminDashboardPage() {
+  const [userCount, setUserCount] = useState<number | null>(null)
+  const [formCount, setFormCount] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -34,6 +39,28 @@ export default function AdminDashboardPage() {
     show: { opacity: 1, y: 0 },
   }
 
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      // Buscar usuários
+      const userRes = await fetch("/api/user")
+      let users = []
+      if (userRes.ok) {
+        users = await userRes.json()
+        setUserCount(users.length)
+      }
+      // Buscar formulários
+      const formRes = await fetch("/api/forms")
+      let forms = []
+      if (formRes.ok) {
+        forms = await formRes.json()
+        setFormCount(forms.length)
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
   return (
     <DashboardLayout>
       <div className="w-full p-4 md:p-6">
@@ -47,52 +74,52 @@ export default function AdminDashboardPage() {
         <motion.div variants={container} initial="hidden" animate="show" className="grid gap-6 md:grid-cols-4">
           <motion.div variants={item}>
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-6 min-h-[120px] flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-sm font-medium">Total de Usuários</h3>
                   <Users className="h-4 w-4 text-upe-blue" />
                 </div>
-                <div className="text-3xl font-bold text-upe-blue">1,248</div>
-                <p className="text-xs text-muted-foreground">+32 novos esta semana</p>
+                <div className="text-3xl font-bold text-upe-blue">{loading ? '...' : userCount}</div>
+                {/* <p className="text-xs text-muted-foreground">+32 novos esta semana</p> */}
               </CardContent>
             </Card>
           </motion.div>
 
           <motion.div variants={item}>
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-6 min-h-[120px] flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-sm font-medium">Formulários Ativos</h3>
                   <ClipboardList className="h-4 w-4 text-upe-blue" />
                 </div>
-                <div className="text-3xl font-bold text-upe-blue">8</div>
-                <p className="text-xs text-muted-foreground">2 pendentes de liberação</p>
+                <div className="text-3xl font-bold text-upe-blue">{loading ? '...' : formCount}</div>
+                {/* <p className="text-xs text-muted-foreground">2 pendentes de liberação</p> */}
               </CardContent>
             </Card>
           </motion.div>
 
           <motion.div variants={item}>
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-6 min-h-[120px] flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-sm font-medium">Taxa de Participação</h3>
                   <Activity className="h-4 w-4 text-green-500" />
                 </div>
-                <div className="text-3xl font-bold text-upe-blue">68%</div>
-                <p className="text-xs text-muted-foreground">+12% em relação ao último ciclo</p>
+                <div className="text-3xl font-bold text-upe-blue">Null</div>
+                <p className="text-xs text-muted-foreground">Null em relação ao último ciclo</p>
               </CardContent>
             </Card>
           </motion.div>
 
           <motion.div variants={item}>
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-6 min-h-[120px] flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-sm font-medium">Próximo Ciclo</h3>
                   <Calendar className="h-4 w-4 text-upe-red" />
                 </div>
-                <div className="text-lg font-bold text-upe-blue">Avaliação 2023.2</div>
-                <p className="text-xs text-muted-foreground">Inicia em 15 dias</p>
+                <div className="text-lg font-bold text-upe-blue">Avaliação 2025.2</div>
+                <p className="text-xs text-muted-foreground">Inicia em Null dias</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -115,33 +142,8 @@ export default function AdminDashboardPage() {
                 <CardDescription>Registro das ações administrativas recentes no sistema</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data/Hora</TableHead>
-                      <TableHead>Usuário</TableHead>
-                      <TableHead>Ação</TableHead>
-                      <TableHead>Detalhes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activityLogs.map((log, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{log.timestamp}</TableCell>
-                        <TableCell>{log.user}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {log.actionIcon}
-                            <span>{log.action}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{log.details}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="mt-4 flex justify-end">
-                  <Button variant="outline">Ver todos os logs</Button>
+                <div className="text-center text-muted-foreground py-8 text-lg font-medium">
+                  Em desenvolvimento...
                 </div>
               </CardContent>
             </Card>

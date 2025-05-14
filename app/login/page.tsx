@@ -18,12 +18,27 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const router = useRouter()
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setFormError(null)
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setFormError("Por favor, insira um endereço de email válido")
+      setIsLoading(false)
+      return
+    }
+
+    if (!password) {
+      setFormError("Por favor, insira sua senha")
+      setIsLoading(false)
+      return
+    }
 
     try {
       const result = await signIn("credentials", {
@@ -32,23 +47,26 @@ export default function LoginPage() {
         redirect: false,
       })
 
-      if (result?.error) {
-        toast({
-          title: "Erro ao fazer login",
-          description: result.error,
-          variant: "destructive",
-        })
+      if (!result || result.error || result.status === 401) {
+        if (result?.error && result.error.trim().toLowerCase() === "conta inativada") {
+          router.push("/conta-inativada")
+          setIsLoading(false)
+          return
+        }
+        setFormError("Email ou senha incorretos")
+        setIsLoading(false)
         return
       }
+
+      toast({
+        title: "Login realizado com sucesso",
+        description: "Redirecionando para o dashboard...",
+      })
 
       router.push("/dashboard")
       router.refresh()
     } catch (error) {
-      toast({
-        title: "Erro ao fazer login",
-        description: "Ocorreu um erro ao tentar fazer login. Tente novamente.",
-        variant: "destructive",
-      })
+      setFormError("Ocorreu um erro ao tentar fazer login. Tente novamente.")
     } finally {
       setIsLoading(false)
     }
@@ -117,6 +135,11 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
+              {formError && (
+                <div className="text-red-600 text-sm text-center mb-2">
+                  {formError}
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button
@@ -134,23 +157,6 @@ export default function LoginPage() {
                   Esqueceu sua senha?
                 </Link>
               </div>
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou continue com</span>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              >
-                <Image src="/google-logo.png" alt="Google" width={18} height={18} className="mr-2" />
-                Google
-              </Button>
               <p className="mt-4 text-center text-sm text-muted-foreground">
                 Não tem uma conta?{" "}
                 <Link href="/register" className="text-upe-blue hover:underline">

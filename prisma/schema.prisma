@@ -23,6 +23,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   responses     Response[]
   createdForms  Form[]    @relation("FormCreator")
+  active        Boolean   @default(true)
 }
 
 model Form {
@@ -31,6 +32,7 @@ model Form {
   description String
   category    Category
   status      FormStatus @default(DRAFT)
+  externalStatus ExternalStatus @default(HIDDEN)
   deadline    DateTime?
   estimatedTime String?
   createdAt   DateTime   @default(now())
@@ -39,6 +41,8 @@ model Form {
   createdById String
   questions   Question[]
   responses   Response[]
+  visibleToRoles   String[]  @default([])
+  visibleToUserIds String[]  @default([])
 }
 
 model Question {
@@ -50,6 +54,7 @@ model Question {
   rows        String[]
   columns     String[]
   order       Int
+  conditional Json?
   form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
   formId      String
   responses   Response[]
@@ -85,11 +90,11 @@ enum FormStatus {
 }
 
 enum Category {
-  INSTITUTIONAL
-  INFRASTRUCTURE
-  TEACHING
-  COURSE
-  SERVICES
+  DOCENTES
+  DISCENTES
+  EGRESSOS
+  TECNICOS_UNIDADES
+  TECNICOS_COMPLEXO
 }
 
 enum QuestionType {
@@ -99,4 +104,11 @@ enum QuestionType {
   SCALE
   GRID
   DROPDOWN
+}
+
+enum ExternalStatus {
+  HIDDEN      // Formulário oculto
+  AVAILABLE   // Disponível para responder
+  FROZEN      // Congelado (não pode mais responder)
+  SCHEDULED   // Agendado para ficar disponível
 } 

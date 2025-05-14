@@ -22,6 +22,7 @@ interface Question {
   options?: string[]
   rows?: string[]
   columns?: string[]
+  conditional?: any
 }
 
 interface FormData {
@@ -29,6 +30,49 @@ interface FormData {
   title: string
   description: string
   questions: Question[]
+}
+
+function renderConditional(conditional: any, questions: any[]) {
+  if (!conditional) return null
+  const dependeDe = questions.find(q => q.id === conditional.dependsOn)
+  const dependeDeText = dependeDe ? `a resposta da questão "${dependeDe.text}"` : `uma resposta anterior`
+  const conds = Array.isArray(conditional.conditions) ? conditional.conditions : []
+  const op = conditional.operator === "AND" ? "e" : "ou"
+  const condText = conds.map((c: any) => {
+    let tipo = c.type === "equals" ? "for igual a" : c.type
+    return `${tipo} "${c.value}"`
+  }).join(` ${op} `)
+  return (
+    <div className="mt-2 text-xs text-muted-foreground">
+      <b>Condicional:</b> Esta questão só aparece se {dependeDeText} {condText}.
+    </div>
+  )
+}
+
+function shouldShowQuestion(question: any, responses: Record<string, any>): boolean {
+  if (!question.conditional) return true;
+  const { dependsOn, operator, conditions } = question.conditional;
+  const dependentValue = responses[dependsOn];
+  if (dependentValue === undefined) return false;
+  const checkCondition = (condition: {type: string, value: string}): boolean => {
+    if (condition.type === "equals") {
+      if (Array.isArray(dependentValue)) {
+        return dependentValue.map(String).includes(condition.value);
+      }
+      return String(dependentValue) === condition.value;
+    } else if (condition.type === "contains") {
+      if (Array.isArray(dependentValue)) {
+        return dependentValue.map(String).some(v => v.includes(condition.value));
+      }
+      return String(dependentValue).includes(condition.value);
+    }
+    return false;
+  };
+  if (operator === "AND") {
+    return conditions.every(checkCondition);
+  } else {
+    return conditions.some(checkCondition);
+  }
 }
 
 export default function ResponderAvaliacaoPage() {
@@ -39,35 +83,16 @@ export default function ResponderAvaliacaoPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // TODO: Implementar a busca do formulário pelo ID
-    // Por enquanto, usando dados mockados
-    setFormData({
-      id: params.id as string,
-      title: "Avaliação Institucional 2023.2",
-      description: "Avaliação geral da instituição para o semestre 2023.2",
-      questions: [
-        {
-          id: "1",
-          text: "Como você avalia a infraestrutura geral da instituição?",
-          type: "scale",
-          required: true
-        },
-        {
-          id: "2",
-          text: "Quais serviços você utiliza com mais frequência?",
-          type: "checkbox",
-          required: true,
-          options: ["Biblioteca", "Laboratórios", "Restaurante Universitário", "Centro de Informática"]
-        },
-        {
-          id: "3",
-          text: "Descreva os principais pontos positivos da instituição:",
-          type: "text",
-          required: true
-        }
-      ]
-    })
-    setLoading(false)
+    const fetchForm = async () => {
+      setLoading(true)
+      const res = await fetch(`/api/forms?id=${params.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setFormData(data)
+      }
+      setLoading(false)
+    }
+    if (params.id) fetchForm()
   }, [params.id])
 
   const handleResponseChange = (questionId: string, value: any) => {
@@ -78,11 +103,24 @@ export default function ResponderAvaliacaoPage() {
   }
 
   const handleSubmit = async () => {
+    if (!formData) return;
     try {
-      // TODO: Implementar o envio das respostas para o backend
-      console.log("Respostas:", responses)
-      toast.success("Avaliação enviada com sucesso!")
-      router.push("/dashboard/avaliacoes")
+      const payload = Object.entries(responses).map(([questionId, value]) => ({
+        formId: formData.id,
+        questionId,
+        value: Array.isArray(value) ? value.join(", ") : String(value ?? "")
+      }))
+      const res = await fetch("/api/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ responses: payload }),
+      })
+      if (res.ok) {
+        toast.success("Avaliação enviada com sucesso!")
+        router.push("/dashboard/avaliacoes")
+      } else {
+        toast.error("Erro ao enviar avaliação. Tente novamente.")
+      }
     } catch (error) {
       toast.error("Erro ao enviar avaliação. Tente novamente.")
     }
@@ -134,108 +172,157 @@ export default function ResponderAvaliacaoPage() {
         </div>
 
         <div className="space-y-4">
-          {formData.questions.map((question, index) => (
-            <Card key={question.id}>
-              <CardContent className="p-6">
-                <div className="flex flex-col space-y-4">
-                  <div>
-                    <Label className="text-base font-medium text-upe-blue">
-                      {index + 1}. {question.text}
-                      {question.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                  </div>
-
-                  {question.type === "multiple_choice" && (
-                    <RadioGroup
-                      onValueChange={(value) => handleResponseChange(question.id, value)}
-                      value={responses[question.id]}
-                      className="space-y-2"
-                    >
-                      {question.options?.map((option) => (
-                        <div key={option} className="flex items-center space-x-2">
-                          <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                          <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  )}
-
-                  {question.type === "checkbox" && (
-                    <div className="space-y-2">
-                      {question.options?.map((option) => (
-                        <div key={option} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${question.id}-${option}`}
-                            checked={responses[question.id]?.includes(option)}
-                            onCheckedChange={(checked) => {
-                              const currentValues = responses[question.id] || []
-                              handleResponseChange(
-                                question.id,
-                                checked
-                                  ? [...currentValues, option]
-                                  : currentValues.filter((v: string) => v !== option)
-                              )
-                            }}
-                          />
-                          <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
-                        </div>
-                      ))}
+          {formData.questions.map((question, index) => {
+            const type = (question.type || "").toLowerCase();
+            if (!shouldShowQuestion(question, responses)) return null;
+            return (
+              <Card key={question.id}>
+                <CardContent className="p-6">
+                  <div className="flex flex-col space-y-4">
+                    <div>
+                      <Label className="text-base font-medium text-upe-blue">
+                        {index + 1}. {question.text}
+                        {question.required && <span className="text-red-500 ml-1">*</span>}
+                      </Label>
                     </div>
-                  )}
-
-                  {question.type === "text" && (
-                    <Textarea
-                      placeholder="Digite sua resposta aqui..."
-                      value={responses[question.id] || ""}
-                      onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  )}
-
-                  {question.type === "scale" && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between px-1">
-                        <span className="text-sm text-muted-foreground">1 - Muito insatisfeito</span>
-                        <span className="text-sm text-muted-foreground">5 - Muito satisfeito</span>
-                      </div>
+                    {type === "multiple_choice" && (
                       <RadioGroup
-                        value={responses[question.id]}
                         onValueChange={(value) => handleResponseChange(question.id, value)}
-                        className="flex justify-between"
+                        value={responses[question.id]}
+                        className="space-y-2"
                       >
-                        {[1, 2, 3, 4, 5].map((num) => (
-                          <div key={num} className="flex flex-col items-center gap-2">
-                            <RadioGroupItem value={String(num)} id={`scale-${question.id}-${num}`} />
-                            <Label htmlFor={`scale-${question.id}-${num}`} className="text-sm">
-                              {num}
-                            </Label>
+                        {Array.isArray(question.options) && question.options.map((option) => (
+                          <div key={option} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option} id={`${question.id}-${option}`} />
+                            <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
                           </div>
                         ))}
                       </RadioGroup>
-                    </div>
-                  )}
-
-                  {question.type === "dropdown" && (
-                    <Select
-                      value={responses[question.id]}
-                      onValueChange={(value) => handleResponseChange(question.id, value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma opção" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {question.options?.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
+                    )}
+                    {type === "checkbox" && (
+                      <div className="space-y-2">
+                        {Array.isArray(question.options) && question.options.map((option) => (
+                          <div key={option} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${question.id}-${option}`}
+                              checked={responses[question.id]?.includes(option)}
+                              onCheckedChange={(checked) => {
+                                const currentValues = responses[question.id] || []
+                                handleResponseChange(
+                                  question.id,
+                                  checked
+                                    ? [...currentValues, option]
+                                    : currentValues.filter((v: string) => v !== option)
+                                )
+                              }}
+                            />
+                            <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                      </div>
+                    )}
+                    {type === "text" && (
+                      <Textarea
+                        placeholder="Digite sua resposta aqui..."
+                        value={responses[question.id] || ""}
+                        onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                        className="min-h-[100px]"
+                      />
+                    )}
+                    {type === "scale" && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between px-1">
+                          <span className="text-sm text-muted-foreground">1 - Muito insatisfeito</span>
+                          <span className="text-sm text-muted-foreground">5 - Muito satisfeito</span>
+                        </div>
+                        <RadioGroup
+                          value={responses[question.id]}
+                          onValueChange={(value) => handleResponseChange(question.id, value)}
+                          className="flex justify-between"
+                        >
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <div key={num} className="flex flex-col items-center gap-2">
+                              <RadioGroupItem value={String(num)} id={`scale-${question.id}-${num}`} />
+                              <Label htmlFor={`scale-${question.id}-${num}`} className="text-sm">
+                                {num}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    )}
+                    {type === "dropdown" && (
+                      <Select
+                        value={responses[question.id]}
+                        onValueChange={(value) => handleResponseChange(question.id, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma opção" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.isArray(question.options) && question.options.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {type === "grid" && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr>
+                              <th className="p-2 border"></th>
+                              {question.columns?.map((column, colIndex) => (
+                                <th key={colIndex} className="p-2 border text-center text-sm">
+                                  {column}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {question.rows?.map((row, rowIndex) => {
+                              const rowName = `grid-row-${question.id}-${rowIndex}`;
+                              return (
+                                <tr key={rowIndex}>
+                                  <td className="p-2 border font-medium text-sm">{row}</td>
+                                  {question.columns?.map((_, colIndex) => {
+                                    const radioValue = `${rowIndex}-${colIndex}`;
+                                    const radioId = `grid-${question.id}-${rowIndex}-${colIndex}`;
+                                    return (
+                                      <td key={colIndex} className="p-2 border text-center">
+                                        <input
+                                          type="radio"
+                                          name={rowName}
+                                          value={radioValue}
+                                          id={radioId}
+                                          checked={responses[question.id]?.[rowIndex] === radioValue}
+                                          onChange={() => {
+                                            const currentResponses = responses[question.id] || {};
+                                            handleResponseChange(question.id, {
+                                              ...currentResponses,
+                                              [rowIndex]: radioValue
+                                            });
+                                          }}
+                                          className="h-4 w-4 rounded-full border border-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        />
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {question.conditional && renderConditional(question.conditional, formData.questions)}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
 
           <div className="flex justify-end">
             <Button

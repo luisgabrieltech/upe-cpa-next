@@ -22,6 +22,13 @@ import {
   FileText,
   CheckCircle2,
   Clock,
+  User,
+  Users,
+  CheckCircle,
+  XCircle,
+  Snowflake,
+  EyeOff,
+  Calendar,
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -30,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -40,6 +48,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ColumnDef } from "@/components/ui/table"
+import { useRouter } from "next/navigation"
 
 export default function AdminFormulariosPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -48,6 +62,25 @@ export default function AdminFormulariosPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [forms, setForms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [visibilityFormId, setVisibilityFormId] = useState<string | null>(null)
+  const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false)
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [selectedExternalStatus, setSelectedExternalStatus] = useState<string>("")
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("")
+  const [deleteFormName, setDeleteFormName] = useState("")
+  const [statusType, setStatusType] = useState<'internal' | 'external'>('internal')
+  const router = useRouter()
+
+  const roles = [
+    { value: "DOCENTE", label: "Docente" },
+    { value: "DISCENTE", label: "Discente" },
+    { value: "EGRESSO", label: "Egresso" },
+    { value: "TEC_ADMIN", label: "Téc. Adm. Ensino" },
+    { value: "TEC_HOSP", label: "Téc. Complexo Hosp." },
+    { value: "ADMIN", label: "Admin" },
+    { value: "USER", label: "Usuário" },
+  ]
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -68,23 +101,47 @@ export default function AdminFormulariosPage() {
       form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       form.description.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesStatus = statusFilter === "all" || form.status === statusFilter
+    let matchesStatus = true
+    if (statusFilter !== "all") {
+      if (statusType === 'internal') {
+        matchesStatus = (form.status?.toLowerCase() === statusFilter.toLowerCase())
+      } else {
+        matchesStatus = (form.externalStatus === statusFilter)
+      }
+    }
 
     return matchesSearch && matchesStatus
   })
 
   // Função para abrir o diálogo de confirmação de exclusão
-  const handleDeleteClick = (formId: string) => {
+  const handleDeleteClick = (formId: string, formName: string) => {
     setDeleteFormId(formId)
+    setDeleteFormName(formName)
+    setDeleteConfirmInput("")
     setIsDeleteDialogOpen(true)
   }
 
   // Função para confirmar a exclusão
-  const confirmDelete = () => {
-    // Aqui seria implementada a lógica para excluir o formulário
-    console.log(`Excluindo formulário ${deleteFormId}`)
+  const confirmDelete = async () => {
+    if (!deleteFormId) return
+    await fetch(`/api/forms`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: deleteFormId }),
+    })
     setIsDeleteDialogOpen(false)
     setDeleteFormId(null)
+    setDeleteFormName("")
+    setDeleteConfirmInput("")
+    setForms(prev => prev.filter(f => f.id !== deleteFormId))
+  }
+
+  const openVisibilityDialog = (form: any) => {
+    setVisibilityFormId(form.id)
+    setSelectedRoles(form.visibleToRoles || [])
+    setSelectedUserIds(form.visibleToUserIds || [])
+    setSelectedExternalStatus(form.externalStatus || "HIDDEN")
+    setIsVisibilityDialogOpen(true)
   }
 
   const container = {
@@ -100,6 +157,208 @@ export default function AdminFormulariosPage() {
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
+  }
+
+  const columns: ColumnDef<Form>[] = [
+    {
+      accessorKey: "title",
+      header: "Título",
+      cell: ({ row }) => {
+        const title = row.getValue("title") as string
+        return (
+          <div className="flex flex-col">
+            <span>{title}</span>
+            <span className="text-xs text-muted-foreground">{row.getValue("description") as string}</span>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status Interno",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string
+        return (
+          <Badge variant={
+            status === "ACTIVE" ? "default" :
+            status === "DRAFT" ? "secondary" :
+            status === "CLOSED" ? "destructive" :
+            "outline"
+          }>
+            {status === "ACTIVE" ? "Ativo" :
+             status === "DRAFT" ? "Rascunho" :
+             status === "CLOSED" ? "Encerrado" :
+             status === "FROZEN" ? "Congelado" :
+             status}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: "externalStatus",
+      header: "Status Externo",
+      cell: ({ row }) => {
+        const status = row.getValue("externalStatus") as string
+        return (
+          <Badge variant={
+            status === "AVAILABLE" ? "default" :
+            status === "HIDDEN" ? "secondary" :
+            status === "FROZEN" ? "destructive" :
+            status === "SCHEDULED" ? "outline" :
+            "outline"
+          }>
+            {status === "AVAILABLE" ? "Disponível" :
+             status === "HIDDEN" ? "Oculto" :
+             status === "FROZEN" ? "Congelado" :
+             status === "SCHEDULED" ? "Agendado" :
+             status}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Criado em",
+      cell: ({ row }) => {
+        const createdAt = row.getValue("createdAt") as string
+        return createdAt ? format(new Date(createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-"
+      },
+    },
+    {
+      accessorKey: "deadline",
+      header: "Prazo",
+      cell: ({ row }) => {
+        const deadline = row.getValue("deadline") as string
+        return deadline ? format(new Date(deadline), "dd/MM/yyyy", { locale: ptBR }) : "-"
+      },
+    },
+    {
+      accessorKey: "estimatedTime",
+      header: "Tempo Estimado",
+      cell: ({ row }) => {
+        const estimatedTime = row.getValue("estimatedTime") as number
+        return estimatedTime ? `${estimatedTime} min` : "-"
+      },
+    },
+    {
+      accessorKey: "responses",
+      header: "Respostas",
+      cell: ({ row }) => {
+        const responses = row.getValue("responses") as number
+        return responses.toString()
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const form = row.original
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <a href={`/dashboard/admin/formularios/preview/${form.id}`} target="_blank" rel="noopener noreferrer">
+                  <Eye className="mr-2 h-4 w-4" />
+                  <span>Visualizar</span>
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/admin/formularios/novo/${form.id}`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  <span>Editar</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => openVisibilityDialog(form)}>
+                <Users className="mr-2 h-4 w-4 text-upe-blue" />
+                <span>Gerenciar visibilidade</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                const res = await fetch(`/api/forms?id=${form.id}`)
+                if (res.ok) {
+                  const data = await res.json()
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `formulario-${form.id}.json`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                } else {
+                  alert('Erro ao baixar formulário')
+                }
+              }}>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Baixar JSON</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-upe-red focus:text-upe-red"
+                onClick={() => handleDeleteClick(form.id, form.title)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Excluir</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
+
+  const updateFormStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch("/api/forms?action=status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      })
+      if (res.ok) {
+        router.refresh()
+      } else {
+        alert("Erro ao atualizar status")
+      }
+    } catch (error) {
+      alert("Erro ao atualizar status")
+    }
+  }
+
+  const updateFormExternalStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch("/api/forms?action=external-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      })
+      if (res.ok) {
+        router.refresh()
+      } else {
+        alert("Erro ao atualizar status")
+      }
+    } catch (error) {
+      alert("Erro ao atualizar status")
+    }
+  }
+
+  const deleteForm = async (id: string) => {
+    try {
+      const res = await fetch("/api/forms?id=" + id, {
+        method: "DELETE",
+      })
+      if (res.ok) {
+        router.refresh()
+      } else {
+        alert("Erro ao excluir formulário")
+      }
+    } catch (error) {
+      alert("Erro ao excluir formulário")
+    }
   }
 
   return (
@@ -145,19 +404,38 @@ export default function AdminFormulariosPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusType} onValueChange={v => setStatusType(v as 'internal' | 'external')}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
-                      <SelectValue placeholder="Filtrar por status" />
+                      <SelectValue placeholder="Tipo de status" />
                     </div>
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="internal">Status Interno</SelectItem>
+                    <SelectItem value="external">Status Externo</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
                     <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="active">Ativos</SelectItem>
-                    <SelectItem value="draft">Rascunhos</SelectItem>
-                    <SelectItem value="closed">Encerrados</SelectItem>
-                    <SelectItem value="frozen">Congelados</SelectItem>
+                    {statusType === 'internal' ? (
+                      <>
+                        <SelectItem value="active">Pronto</SelectItem>
+                        <SelectItem value="draft">Desenvolvimento</SelectItem>
+                        <SelectItem value="closed">Encerrado</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="AVAILABLE">Disponível</SelectItem>
+                        <SelectItem value="HIDDEN">Oculto</SelectItem>
+                        <SelectItem value="FROZEN">Congelado</SelectItem>
+                        <SelectItem value="SCHEDULED">Agendado</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -180,86 +458,99 @@ export default function AdminFormulariosPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Título</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Status Interno</TableHead>
+                      <TableHead>Status Externo</TableHead>
                       <TableHead>Criado em</TableHead>
                       <TableHead>Prazo</TableHead>
+                      <TableHead>Tempo Estimado</TableHead>
                       <TableHead>Respostas</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredForms.length > 0 ? (
-                      filteredForms.map((form) => (
-                        <TableRow key={form.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex flex-col">
-                              <span>{form.title}</span>
-                              <span className="text-xs text-muted-foreground">{form.description}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={form.status} />
-                          </TableCell>
-                          <TableCell>{form.createdAt}</TableCell>
-                          <TableCell>{form.deadline}</TableCell>
-                          <TableCell>{form.responses}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Abrir menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/dashboard/admin/formularios/${form.id}`}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    <span>Visualizar</span>
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/dashboard/admin/formularios/${form.id}/editar`}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    <span>Editar</span>
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {form.status === "active" ? (
-                                  <DropdownMenuItem>
-                                    <Lock className="mr-2 h-4 w-4 text-yellow-500" />
-                                    <span>Bloquear</span>
+                      filteredForms.map((form) => {
+                        const criadoEm = form.createdAt ? format(new Date(form.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-";
+                        const prazo = form.deadline ? format(new Date(form.deadline), "dd/MM/yyyy", { locale: ptBR }) : "-";
+                        const tempoEstimado = form.estimatedTime ? `${form.estimatedTime} min` : "-";
+                        return (
+                          <TableRow key={form.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex flex-col">
+                                <span>{form.title}</span>
+                                <span className="text-xs text-muted-foreground">{form.description}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <StatusBadge status={form.status} />
+                            </TableCell>
+                            <TableCell>
+                              <ExternalStatusBadge status={form.externalStatus} />
+                            </TableCell>
+                            <TableCell>{criadoEm}</TableCell>
+                            <TableCell>{prazo}</TableCell>
+                            <TableCell>{tempoEstimado}</TableCell>
+                            <TableCell>{new Set(form.responses.map(r => r.userId)).size}</TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Abrir menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem asChild>
+                                    <a href={`/dashboard/admin/formularios/preview/${form.id}`} target="_blank" rel="noopener noreferrer">
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      <span>Visualizar</span>
+                                    </a>
                                   </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem>
-                                    <Unlock className="mr-2 h-4 w-4 text-green-500" />
-                                    <span>Liberar</span>
+                                  <DropdownMenuItem asChild>
+                                    <Link href={`/dashboard/admin/formularios/novo/${form.id}`}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      <span>Editar</span>
+                                    </Link>
                                   </DropdownMenuItem>
-                                )}
-                                {form.status === "frozen" ? (
-                                  <DropdownMenuItem>
-                                    <CheckCircle2 className="mr-2 h-4 w-4 text-upe-blue" />
-                                    <span>Descongelar</span>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => openVisibilityDialog(form)}>
+                                    <Users className="mr-2 h-4 w-4 text-upe-blue" />
+                                    <span>Gerenciar visibilidade</span>
                                   </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem>
-                                    <Clock className="mr-2 h-4 w-4 text-upe-blue" />
-                                    <span>Congelar</span>
+                                  <DropdownMenuItem onClick={async () => {
+                                    const res = await fetch(`/api/forms?id=${form.id}`)
+                                    if (res.ok) {
+                                      const data = await res.json()
+                                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                                      const url = URL.createObjectURL(blob)
+                                      const a = document.createElement('a')
+                                      a.href = url
+                                      a.download = `formulario-${form.id}.json`
+                                      document.body.appendChild(a)
+                                      a.click()
+                                      document.body.removeChild(a)
+                                      URL.revokeObjectURL(url)
+                                    } else {
+                                      alert('Erro ao baixar formulário')
+                                    }
+                                  }}>
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    <span>Baixar JSON</span>
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-upe-red focus:text-upe-red"
-                                  onClick={() => handleDeleteClick(form.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  <span>Excluir</span>
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-upe-red focus:text-upe-red"
+                                    onClick={() => handleDeleteClick(form.id, form.title)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Excluir</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
                     ) : (
                       <TableRow>
                         <TableCell colSpan={6} className="h-24 text-center">
@@ -286,19 +577,124 @@ export default function AdminFormulariosPage() {
                 Confirmar exclusão
               </DialogTitle>
               <DialogDescription>
-                Você está prestes a excluir um formulário. Esta ação não pode ser desfeita e todos os dados associados
-                serão perdidos.
+                <span className="font-semibold text-upe-red">Atenção!</span><br />
+                Você está prestes a excluir o formulário <b>{deleteFormName}</b>.<br />
+                <span className="text-sm">Todas as perguntas e respostas associadas serão <b>apagadas permanentemente</b>.</span><br />
+                <br />
+                Para confirmar, digite o nome exato do formulário abaixo:
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm font-medium">Tem certeza que deseja excluir este formulário?</p>
+              <Input
+                placeholder="Digite o nome do formulário"
+                value={deleteConfirmInput}
+                onChange={e => setDeleteConfirmInput(e.target.value)}
+                autoFocus
+              />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button variant="destructive" onClick={confirmDelete}>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={deleteConfirmInput !== deleteFormName}
+              >
                 Sim, excluir formulário
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isVisibilityDialogOpen} onOpenChange={setIsVisibilityDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Gerenciar Visibilidade</DialogTitle>
+              <DialogDescription>
+                Escolha quem pode visualizar este formulário (roles e/ou usuários específicos)
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div>
+                <label className="block font-medium mb-1">Roles permitidas</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      {selectedRoles.length > 0
+                        ? roles.filter(r => selectedRoles.includes(r.value)).map(r => r.label).join(", ")
+                        : "Selecione as roles"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2">
+                    <div className="flex flex-col gap-1">
+                      {roles.map((role) => (
+                        <label key={role.value} className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox
+                            checked={selectedRoles.includes(role.value)}
+                            onCheckedChange={checked => {
+                              if (checked) {
+                                setSelectedRoles([...selectedRoles, role.value])
+                              } else {
+                                setSelectedRoles(selectedRoles.filter(r => r !== role.value))
+                              }
+                            }}
+                            id={`role-${role.value}`}
+                          />
+                          <span>{role.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="block font-medium mb-1">Usuários permitidos</label>
+                <Input
+                  placeholder="IDs de usuários separados por vírgula"
+                  value={selectedUserIds.join(",")}
+                  onChange={e => setSelectedUserIds(e.target.value.split(",").map(s => s.trim()))}
+                />
+                {/* Em uma versão futura, pode-se implementar autocomplete/busca de usuários */}
+              </div>
+              <div>
+                <label className="block font-medium mb-1">Status Externo</label>
+                <Select value={selectedExternalStatus} onValueChange={setSelectedExternalStatus}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o status externo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AVAILABLE">Disponível</SelectItem>
+                    <SelectItem value="HIDDEN">Oculto</SelectItem>
+                    <SelectItem value="FROZEN">Congelado</SelectItem>
+                    <SelectItem value="SCHEDULED">Agendado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsVisibilityDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button className="bg-upe-blue text-white" onClick={async () => {
+                if (!visibilityFormId) return
+                const res = await fetch(`/api/forms?action=visibility`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    id: visibilityFormId,
+                    visibleToRoles: selectedRoles,
+                    visibleToUserIds: selectedUserIds,
+                    externalStatus: selectedExternalStatus,
+                  }),
+                })
+                if (res.ok) {
+                  const updatedForm = await res.json()
+                  setForms(prev => prev.map(f => f.id === updatedForm.id ? { ...f, ...updatedForm } : f))
+                }
+                setIsVisibilityDialogOpen(false)
+              }}>
+                Salvar
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -311,21 +707,37 @@ export default function AdminFormulariosPage() {
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "active":
-      return <Badge className="bg-green-500 hover:bg-green-600">Ativo</Badge>
+    case "ACTIVE":
+      return <Badge className="bg-green-500 hover:bg-green-600">Pronto</Badge>
     case "draft":
+    case "DRAFT":
       return (
         <Badge variant="outline" className="text-muted-foreground">
-          Rascunho
+          Desenvolvimento
         </Badge>
       )
     case "closed":
+    case "CLOSED":
       return (
         <Badge variant="secondary" className="bg-gray-500 hover:bg-gray-600 text-white">
           Encerrado
         </Badge>
       )
-    case "frozen":
+    default:
+      return <Badge variant="outline">{status}</Badge>
+  }
+}
+
+function ExternalStatusBadge({ status }: { status: string }) {
+  switch (status) {
+    case "AVAILABLE":
+      return <Badge className="bg-green-500 hover:bg-green-600">Disponível</Badge>
+    case "HIDDEN":
+      return <Badge variant="outline" className="text-muted-foreground">Oculto</Badge>
+    case "FROZEN":
       return <Badge className="bg-blue-500 hover:bg-blue-600">Congelado</Badge>
+    case "SCHEDULED":
+      return <Badge className="bg-yellow-500 hover:bg-yellow-600">Agendado</Badge>
     default:
       return <Badge variant="outline">{status}</Badge>
   }

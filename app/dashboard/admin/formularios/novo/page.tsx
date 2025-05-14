@@ -29,29 +29,78 @@ interface Question {
   text: string
   required: boolean
   options: string[]
-  rows?: string[] 
-  columns?: string[] 
+  rows?: string[]
+  columns?: string[]
   conditional?: {
-    dependsOn: string 
-    operator: "OR" | "AND" 
+    dependsOn: string
+    operator: "OR" | "AND"
     conditions: Array<{
       type: "equals" | "contains"
-      value: string 
+      value: string
     }>
   }
 }
 
-export default function NovoFormularioPage() {
+interface FormData {
+  title: string
+  description: string
+  category: string
+  status: string
+  endDate: Date | null
+  estimatedTime: string
+  questions: Question[]
+}
+
+interface NovoFormularioPageProps {
+  initialData?: any
+}
+
+function normalizeQuestion(q: any): Question {
+  return {
+    id: q.id,
+    type: (q.type || "text").toLowerCase(),
+    text: q.text || "",
+    required: q.required ?? true,
+    options: Array.isArray(q.options) ? q.options : [],
+    rows: Array.isArray(q.rows) ? q.rows : [],
+    columns: Array.isArray(q.columns) ? q.columns : [],
+    conditional: q.conditional
+      ? {
+          dependsOn: q.conditional.dependsOn || "",
+          operator: q.conditional.operator || "OR",
+          conditions: Array.isArray(q.conditional.conditions)
+            ? q.conditional.conditions.map((c: any) => ({
+                type: c.type || "equals",
+                value: String(c.value ?? "")
+              }))
+            : [],
+        }
+      : undefined,
+  }
+}
+
+export default function NovoFormularioPage({ initialData }: NovoFormularioPageProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("info")
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => initialData ? {
+    title: initialData.title || "",
+    description: initialData.description || "",
+    category: initialData.category || "",
+    startDate: initialData.startDate ? new Date(initialData.startDate) : null,
+    endDate: initialData.deadline ? new Date(initialData.deadline) : null,
+    estimatedTime: initialData.estimatedTime || "",
+    status: initialData.status || "ACTIVE",
+    questions: Array.isArray(initialData.questions)
+      ? initialData.questions.map(normalizeQuestion)
+      : [],
+  } : {
     title: "",
     description: "",
     category: "",
     startDate: null as Date | null,
     endDate: null as Date | null,
     estimatedTime: "",
-    isPublic: false,
+    status: "ACTIVE",
     questions: [] as Question[],
   })
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
@@ -79,12 +128,12 @@ export default function NovoFormularioPage() {
     const checkCondition = (condition: {type: "equals" | "contains", value: string}): boolean => {
       if (condition.type === "equals") {
         if (Array.isArray(dependentValue)) {
-          return dependentValue.includes(condition.value);
+          return dependentValue.map(String).includes(condition.value);
         }
-        return dependentValue === condition.value;
+        return String(dependentValue) === condition.value;
       } else if (condition.type === "contains") {
         if (Array.isArray(dependentValue)) {
-          return dependentValue.some(v => v.includes(condition.value));
+          return dependentValue.map(String).some(v => v.includes(condition.value));
         }
         return String(dependentValue).includes(condition.value);
       }
@@ -159,7 +208,7 @@ export default function NovoFormularioPage() {
 
     if (editingQuestionId) {
       const updatedQuestions = formData.questions.map(q =>
-        q.id === editingQuestionId ? { ...currentQuestion } : q
+        q.id === editingQuestionId ? { ...currentQuestion, id: editingQuestionId } : q
       );
       setFormData({
         ...formData,
@@ -342,14 +391,16 @@ export default function NovoFormularioPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          id: initialData?.id,
           title: formData.title,
           description: formData.description,
           category: formData.category?.toUpperCase(),
-          status: "ACTIVE",
+          status: formData.status,
           deadline: formData.endDate,
           estimatedTime: formData.estimatedTime,
-          questions: formData.questions.map(q => ({
-            ...q,
+          questions: formData.questions.map((q: Question) => ({
+            id: q.id,
+            text: q.text,
             type: q.type
               .replace("multiple_choice", "MULTIPLE_CHOICE")
               .replace("checkbox", "CHECKBOX")
@@ -357,6 +408,11 @@ export default function NovoFormularioPage() {
               .replace("scale", "SCALE")
               .replace("grid", "GRID")
               .replace("dropdown", "DROPDOWN"),
+            required: q.required,
+            options: q.options || [],
+            rows: q.rows || [],
+            columns: q.columns || [],
+            conditional: q.conditional || null,
           })),
         }),
       })
@@ -649,11 +705,11 @@ export default function NovoFormularioPage() {
                         <SelectValue placeholder="Selecione uma categoria" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="INSTITUTIONAL">Avaliação Institucional</SelectItem>
-                        <SelectItem value="INFRASTRUCTURE">Avaliação de Infraestrutura</SelectItem>
-                        <SelectItem value="TEACHING">Avaliação Docente</SelectItem>
-                        <SelectItem value="COURSE">Avaliação de Curso</SelectItem>
-                        <SelectItem value="SERVICES">Avaliação de Serviços</SelectItem>
+                        <SelectItem value="DOCENTES">Avaliação Docentes</SelectItem>
+                        <SelectItem value="DISCENTES">Avaliação Discentes</SelectItem>
+                        <SelectItem value="EGRESSOS">Avaliação Egressos</SelectItem>
+                        <SelectItem value="TECNICOS_UNIDADES">Técnicos das Unidades de Ensino</SelectItem>
+                        <SelectItem value="TECNICOS_COMPLEXO">Técnicos do Complexo Hospitalar</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -722,18 +778,18 @@ export default function NovoFormularioPage() {
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="public-form">Formulário Público</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Se ativado, o formulário estará disponível para todos os usuários
-                    </p>
-                  </div>
-                  <Switch
-                    id="public-form"
-                    checked={formData.isPublic}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isPublic: checked })}
-                  />
+                <div className="mb-4">
+                  <label className="block font-medium mb-1">Status Interno</label>
+                  <Select value={formData.status} onValueChange={value => setFormData({ ...formData, status: value })}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o status interno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DRAFT">Desenvolvimento <span className="text-xs text-muted-foreground">(Em desenvolvimento, não visível para usuários)</span></SelectItem>
+                      <SelectItem value="ACTIVE">Pronto <span className="text-xs text-muted-foreground">(Pronto para ser publicado)</span></SelectItem>
+                      <SelectItem value="CLOSED">Encerrado <span className="text-xs text-muted-foreground">(Finalizado, não aceita respostas)</span></SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">

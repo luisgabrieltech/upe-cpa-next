@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
             <Link href="/" className="flex items-center space-x-2">
-              <Image src="/upe-logo-white.png" alt="Logo UPE" width={120} height={48} className="h-12 w-auto" />
+              <Image src="/upe-logo.png" alt="Logo UPE" width={120} height={48} className="h-12 w-auto" />
             </Link>
             <p className="text-sm text-white/80">Comissão Própria de Avaliação da Universidade de Pernambuco</p>
             <div className="flex space-x-4">

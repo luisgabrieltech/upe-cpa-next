@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -8,20 +8,50 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Clock, FileText, Search } from "lucide-react"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 
 export default function AvaliacoesPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [forms, setForms] = useState<any[]>([])
+  const [userResponses, setUserResponses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const { data: session } = useSession()
 
-  const filteredAvailable = availableForms.filter(
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      const [formsRes, responsesRes] = await Promise.all([
+        fetch("/api/forms"),
+        fetch("/api/responses?user=me"),
+      ])
+      if (formsRes.ok) {
+        setForms(await formsRes.json())
+      }
+      if (responsesRes.ok) {
+        setUserResponses(await responsesRes.json())
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
+  // IDs dos formulários já respondidos pelo usuário
+  const respondedFormIds = Array.from(new Set(userResponses.map((r: any) => r.formId)))
+
+  const filteredAvailable = forms.filter(
     (form) =>
-      form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      form.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      form.externalStatus !== "HIDDEN" &&
+      !respondedFormIds.includes(form.id) &&
+      (form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        form.description.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  const filteredCompleted = completedForms.filter(
+  const filteredCompleted = forms.filter(
     (form) =>
-      form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      form.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      form.externalStatus !== "HIDDEN" &&
+      respondedFormIds.includes(form.id) &&
+      (form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        form.description.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   return (
@@ -55,9 +85,16 @@ export default function AvaliacoesPage() {
           </TabsList>
 
           <TabsContent value="available" className="space-y-4">
-            {filteredAvailable.length > 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center p-6 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4 animate-pulse" />
+                  <h3 className="text-lg font-medium">Carregando avaliações...</h3>
+                </CardContent>
+              </Card>
+            ) : filteredAvailable.length > 0 ? (
               filteredAvailable.map((form, index) => (
-                <Card key={index}>
+                <Card key={form.id}>
                   <CardContent className="p-6">
                     <div className="flex flex-col space-y-4">
                       <div>
@@ -68,18 +105,28 @@ export default function AvaliacoesPage() {
                         <div className="flex flex-wrap items-center gap-4">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            <span>Prazo: {form.deadline}</span>
+                            <span>Prazo: {form.deadline ? new Date(form.deadline).toLocaleDateString() : '-'}</span>
                           </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            <span>Tempo estimado: {form.estimatedTime}</span>
+                            <span>Tempo estimado: {form.estimatedTime || '-'} min</span>
                           </div>
+                          {form.externalStatus === "FROZEN" && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Congelado para respostas</span>
+                          )}
+                          {form.externalStatus === "SCHEDULED" && (
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Em breve</span>
+                          )}
                         </div>
-                        <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" asChild>
-                          <Link href={`/dashboard/avaliacoes/responder/${form.id}`}>
-                            Responder
-                          </Link>
-                        </Button>
+                        {form.externalStatus === "AVAILABLE" ? (
+                          <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" asChild>
+                            <Link href={`/dashboard/avaliacoes/responder/${form.id}`}>
+                              Responder
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button disabled variant="outline">Indisponível</Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -99,9 +146,16 @@ export default function AvaliacoesPage() {
           </TabsContent>
 
           <TabsContent value="completed" className="space-y-4">
-            {filteredCompleted.length > 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center p-6 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4 animate-pulse" />
+                  <h3 className="text-lg font-medium">Carregando avaliações concluídas...</h3>
+                </CardContent>
+              </Card>
+            ) : filteredCompleted.length > 0 ? (
               filteredCompleted.map((form, index) => (
-                <Card key={index}>
+                <Card key={form.id}>
                   <CardContent className="p-6">
                     <div className="flex flex-col space-y-4">
                       <div>
@@ -110,16 +164,7 @@ export default function AvaliacoesPage() {
                       </div>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <FileText className="h-3 w-3" />
-                          <span>Concluída em: {form.completedDate}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" className="border-upe-blue text-upe-blue hover:bg-upe-blue/10">
-                            Ver Respostas
-                          </Button>
-                          {form.resultsAvailable && (
-                            <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white">Ver Resultados</Button>
-                          )}
+                          <span>Você já respondeu esta avaliação.</span>
                         </div>
                       </div>
                     </div>
@@ -144,43 +189,3 @@ export default function AvaliacoesPage() {
   )
 }
 
-const availableForms = [
-  {
-    id: "form-1",
-    title: "Avaliação Institucional 2023.2",
-    description: "Avaliação geral da instituição para o semestre 2023.2",
-    deadline: "30/06/2023",
-    estimatedTime: "15 minutos",
-  },
-  {
-    id: "form-2",
-    title: "Avaliação de Infraestrutura",
-    description: "Avaliação das instalações físicas e recursos tecnológicos",
-    deadline: "15/06/2023",
-    estimatedTime: "10 minutos",
-  },
-]
-
-const completedForms = [
-  {
-    id: "form-3",
-    title: "Avaliação Institucional 2022.2",
-    description: "Avaliação geral da instituição para o semestre 2022.2",
-    completedDate: "15/12/2022",
-    resultsAvailable: true,
-  },
-  {
-    id: "form-4",
-    title: "Avaliação de Infraestrutura 2022",
-    description: "Avaliação das instalações físicas e recursos tecnológicos",
-    completedDate: "10/12/2022",
-    resultsAvailable: true,
-  },
-  {
-    id: "form-5",
-    title: "Avaliação Docente 2022.2",
-    description: "Avaliação do corpo docente pelos discentes",
-    completedDate: "05/12/2022",
-    resultsAvailable: false,
-  },
-]

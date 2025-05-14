@@ -7,14 +7,46 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Calendar, CheckCircle2, Clock, FileText, Info } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { useEffect, useState } from "react"
 
 export default function DashboardPage() {
+  const { data: session } = useSession()
+  const [forms, setForms] = useState<any[]>([])
+  const [responses, setResponses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      // Buscar formulários disponíveis
+      const formsRes = await fetch("/api/forms?available=true")
+      const formsData = formsRes.ok ? await formsRes.json() : []
+      setForms(formsData)
+      // Buscar respostas do usuário
+      const respRes = await fetch("/api/responses?userId=" + session?.user?.id)
+      const respData = respRes.ok ? await respRes.json() : []
+      setResponses(respData)
+      setLoading(false)
+    }
+    if (session?.user?.id) fetchData()
+  }, [session?.user?.id])
+
+  // IDs dos formulários já respondidos
+  const respondedFormIds = new Set(responses.map((r: any) => r.formId))
+  // Pendentes: disponíveis e não respondidos
+  const pendingForms = forms.filter((f: any) => !respondedFormIds.has(f.id))
+  // Concluídas: disponíveis e respondidas
+  const completedForms = forms.filter((f: any) => respondedFormIds.has(f.id))
+
   return (
     <DashboardLayout>
       <div className="w-full p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-upe-blue">Bem-vindo, João</h1>
+            <h1 className="text-2xl font-bold text-upe-blue">
+              Bem-vindo, {session?.user?.name || "Usuário"}
+            </h1>
             <p className="text-muted-foreground">Confira suas avaliações e informações importantes.</p>
           </div>
         </div>
@@ -23,7 +55,7 @@ export default function DashboardPage() {
           <Info className="h-4 w-4 text-upe-blue" />
           <AlertTitle className="text-upe-blue">Aviso importante</AlertTitle>
           <AlertDescription>
-            O período de avaliação institucional 2023.2 está aberto até 30/06/2023. Sua participação é fundamental!
+            O período de avaliação institucional está aberto. Sua participação é fundamental!
           </AlertDescription>
         </Alert>
 
@@ -48,8 +80,10 @@ export default function DashboardPage() {
                     <h3 className="text-sm font-medium">Avaliações Pendentes</h3>
                     <FileText className="h-4 w-4 text-upe-red" />
                   </div>
-                  <div className="text-3xl font-bold text-upe-blue">2</div>
-                  <p className="text-xs text-muted-foreground">Prazo final em 10 dias</p>
+                  <div className="text-3xl font-bold text-upe-blue">{loading ? "..." : pendingForms.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {pendingForms.length > 0 ? "Você tem avaliações para responder" : "Nenhuma pendente"}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -59,8 +93,10 @@ export default function DashboardPage() {
                     <h3 className="text-sm font-medium">Avaliações Concluídas</h3>
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
                   </div>
-                  <div className="text-3xl font-bold text-upe-blue">8</div>
-                  <p className="text-xs text-muted-foreground">+3 desde o último semestre</p>
+                  <div className="text-3xl font-bold text-upe-blue">{loading ? "..." : completedForms.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {completedForms.length > 0 ? "+" + completedForms.length + " concluídas" : "Nenhuma concluída"}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -81,31 +117,37 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground mb-4">Formulários disponíveis para preenchimento</p>
 
               <div className="space-y-4">
-                {recentForms.map((form, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col space-y-4">
-                        <div>
-                          <h3 className="font-medium text-upe-blue">{form.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{form.description}</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>Prazo: {form.deadline}</span>
+                {loading ? (
+                  <div>Carregando...</div>
+                ) : pendingForms.length === 0 ? (
+                  <div className="text-muted-foreground">Nenhuma avaliação pendente.</div>
+                ) : (
+                  pendingForms.slice(0, 5).map((form) => (
+                    <Card key={form.id}>
+                      <CardContent className="p-6">
+                        <div className="flex flex-col space-y-4">
+                          <div>
+                            <h3 className="font-medium text-upe-blue">{form.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">{form.description}</p>
                           </div>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>Tempo estimado: {form.estimatedTime}</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span>Prazo: {form.deadline ? new Date(form.deadline).toLocaleDateString() : "-"}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span>Tempo estimado: {form.estimatedTime || "-"} min</span>
+                            </div>
+                            <Button size="sm" className="bg-upe-red hover:bg-upe-red/90 text-white" asChild>
+                              <Link href={`/dashboard/avaliacoes/responder/${form.id}`}>Responder</Link>
+                            </Button>
                           </div>
-                          <Button size="sm" className="bg-upe-red hover:bg-upe-red/90 text-white">
-                            Responder
-                          </Button>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
 
               <div className="mt-4">
