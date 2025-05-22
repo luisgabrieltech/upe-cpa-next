@@ -6,6 +6,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { routes } from "@/lib/routes"
 
 export function HeroSection() {
   const [mounted, setMounted] = useState(false)
@@ -59,12 +60,12 @@ export function HeroSection() {
         transition={{ duration: 0.5, delay: 0.4 }}
         className="flex flex-col sm:flex-row gap-4 mt-4"
       >
-        <Link href="/login">
+        <Link href={routes.login}>
           <Button size="lg" className="gap-2 bg-upe-red hover:bg-upe-red/90">
             Participar da Avaliação <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
-        <Link href="/#about">
+        <Link href={routes.about}>
           <Button variant="outline" size="lg" className="border-upe-blue text-upe-blue hover:bg-upe-blue/10">
             Saiba Mais
           </Button>

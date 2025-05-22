@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/landing/navbar"
 import { Footer } from "@/components/landing/footer"
 import { AlertTriangle } from "lucide-react"
+import { routes } from "@/lib/routes"
 
 export default function ErrorPage() {
   return (
@@ -19,7 +20,7 @@ export default function ErrorPage() {
           <p className="text-lg text-muted-foreground">
             A página que você tentou acessar não existe, foi removida ou você não tem permissão para visualizá-la.
           </p>
-          <Link href="/">
+          <Link href={routes.home}>
             <Button className="bg-upe-blue hover:bg-upe-darkblue text-white px-8 py-2 mt-2">
               Voltar para a página inicial
             </Button>

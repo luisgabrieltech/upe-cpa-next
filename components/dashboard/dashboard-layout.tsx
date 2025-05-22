@@ -25,13 +25,6 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
-const currentUser = {
-  name: "Luis Gabriel",
-  email: "luis.gabriel@upe.br",
-  role: "admin", // Pode ser: "user", "admin", "coordenador", "cpa"
-  avatar: "/avatar.png",
-}
-
 const hasAdminAccess = (role: string) => {
   return ["ADMIN", "COORDENADOR", "CPA"].includes(role)
 }
@@ -87,10 +80,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex min-h-screen w-full">
       <div className="hidden md:block">
         <div className="fixed h-screen w-64 flex flex-col border-r bg-white overflow-hidden">
-          <div className="flex h-16 items-center border-b px-4 flex-shrink-0">
-            <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="flex h-16 items-center border-b px-4 flex-shrink-0 justify-center">
+            <Link href="/dashboard" className="flex items-center gap-8">
               <Image src="/upe-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
-              <span className="text-lg font-medium">CPA</span>
+              <Image src="/cpa-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
             </Link>
           </div>
 
@@ -280,7 +273,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex items-center gap-2 ml-4">
             <Image src="/upe-logo.png" alt="Logo UPE" width={60} height={24} className="h-6 w-auto" />
-            <span className="text-lg font-medium">CPA</span>
           </div>
 
           <div className="ml-auto flex items-center gap-2">

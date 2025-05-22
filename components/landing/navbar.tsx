@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { routes } from "@/lib/routes"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -77,18 +78,18 @@ export function Navbar() {
 const navItems = [
   {
     label: "Início",
-    href: "/",
+    href: routes.home,
   },
   {
     label: "Sobre a CPA",
-    href: "/#about",
+    href: routes.about,
   },
   {
     label: "Benefícios",
-    href: "/#benefits",
+    href: routes.benefits,
   },
   {
     label: "Contato",
-    href: "/#contact",
+    href: routes.contact,
   },
 ]

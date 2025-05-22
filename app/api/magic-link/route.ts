@@ -35,10 +35,16 @@ export async function POST(req: Request) {
       },
     })
     // Montar link
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+    const baseUrl = process.env.NEXTAUTH_URL
+    if (!baseUrl) {
+      console.error("NEXTAUTH_URL não está configurada")
+      return NextResponse.json({ message: "Erro de configuração" }, { status: 500 })
+    }
+    console.log("URL Base do Magic Link:", baseUrl)
     const link = `${baseUrl}/magic-auth?token=${token}`
     return NextResponse.json({ link })
   } catch (error) {
+    console.error("Erro ao gerar magic link:", error)
     return NextResponse.json({ message: "Erro ao gerar magic link" }, { status: 500 })
   }
 }

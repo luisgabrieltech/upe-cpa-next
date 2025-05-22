@@ -6,6 +6,7 @@ import { AboutSection } from "@/components/landing/about-section"
 import { ContactSection } from "@/components/landing/contact-section"
 import { Navbar } from "@/components/landing/navbar"
 import { Footer } from "@/components/landing/footer"
+import { routes } from "@/lib/routes"
 
 export default function Home() {
   return (
@@ -35,7 +36,7 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-16 flex justify-center">
-            <Link href="/login">
+            <Link href={routes.login}>
               <Button size="lg" className="gap-2 bg-upe-red hover:bg-upe-red/90">
                 Participar da Avaliação <ArrowRight className="h-4 w-4" />
               </Button>

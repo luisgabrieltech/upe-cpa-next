@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
+import { routes } from "@/lib/routes"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -167,7 +168,7 @@ export default function RegisterPage() {
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Link
-        href="/"
+        href={routes.home}
         className="absolute left-4 top-4 md:left-8 md:top-8 flex items-center text-sm font-medium text-muted-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
