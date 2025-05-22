@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
+import { routes } from "@/lib/routes"
 
 export default function ResetPasswordPage({ params }: { params: { token: string } }) {
   const [showPassword, setShowPassword] = useState(false)
@@ -57,7 +58,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
         description: "Sua senha foi alterada com sucesso",
       })
 
-      router.push("/login")
+      router.push(routes.auth.login)
     } catch (error) {
       toast({
         title: "Erro",
@@ -72,7 +73,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Link
-        href="/login"
+        href={routes.auth.login}
         className="absolute left-4 top-4 md:left-8 md:top-8 flex items-center text-sm font-medium text-muted-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -150,7 +151,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
             <CardFooter>
               <Button
                 type="submit"
-                className="w-full bg-upe-blue hover:bg-upe-darkblue"
+                className="w-full bg-upe-blue hover:bg-upe-blue/90"
                 disabled={isLoading}
               >
                 {isLoading ? "Redefinindo..." : "Redefinir senha"}

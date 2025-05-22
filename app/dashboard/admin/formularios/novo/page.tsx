@@ -22,6 +22,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import React from "react"
+import { routes } from "@/lib/routes"
 
 interface Question {
   id: string
@@ -674,6 +675,65 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   
   QuestionsList.displayName = "QuestionsList";
 
+  const handleQuestionChange = (q: Question, field: keyof Question, value: any) => {
+    setCurrentQuestion(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleOptionChange = (q: Question, index: number, value: string) => {
+    const newOptions = [...q.options]
+    newOptions[index] = value
+    setCurrentQuestion(prev => ({
+      ...prev,
+      options: newOptions
+    }))
+  }
+
+  const handleConditionChange = (q: Question, index: number, field: "type" | "value", value: string) => {
+    if (!q.conditional) return
+    const newConditions = [...q.conditional.conditions]
+    newConditions[index] = {
+      ...newConditions[index],
+      [field]: value
+    }
+    setCurrentQuestion(prev => ({
+      ...prev,
+      conditional: {
+        ...prev.conditional!,
+        conditions: newConditions
+      }
+    }))
+  }
+
+  const renderQuestion = (question: Question, index: number) => {
+    // ... existing code ...
+  }
+
+  const handleConditionOperatorChange = (q: Question, condition: { questionId: string; operator: string; value: string }, idx: number, value: string) => {
+    if (!q.conditional) return
+    const newConditions = [...q.conditional.conditions]
+    newConditions[idx] = {
+      ...condition,
+      operator: value
+    }
+    setCurrentQuestion(prev => ({
+      ...prev,
+      conditional: {
+        ...prev.conditional!,
+        conditions: newConditions
+      }
+    }))
+  }
+
+  const handleOptionDelete = (option: string) => {
+    setCurrentQuestion(prev => ({
+      ...prev,
+      options: prev.options.filter(o => o !== option)
+    }))
+  }
+
   return (
     <DashboardLayout>
       <div className="w-full p-4 md:p-6">
@@ -683,7 +743,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
         >
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/admin/formularios")}>
+            <Button variant="ghost" size="icon" onClick={() => router.push(routes.dashboard.admin.forms.home)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
@@ -692,7 +752,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push("/dashboard/admin/formularios")}>
+            <Button variant="outline" onClick={() => router.push(routes.dashboard.admin.forms.home)}>
               Cancelar
             </Button>
             <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" onClick={saveForm}>
@@ -846,7 +906,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => router.push("/dashboard/admin/formularios")}>
+                <Button variant="outline" onClick={() => router.push(routes.dashboard.admin.forms.home)}>
                   Cancelar
                 </Button>
                 <Button
@@ -911,7 +971,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                       id="question-id"
                       placeholder="Ex: Q1, nota_final, etc."
                       value={currentQuestion.id || ""}
-                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, id: e.target.value })}
+                      onChange={(e) => handleQuestionChange(currentQuestion, "id", e.target.value)}
                       maxLength={32}
                     />
                   </div>
@@ -921,7 +981,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                       id="question-text"
                       placeholder="Digite o título da pergunta..."
                       value={currentQuestion.text}
-                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, text: e.target.value })}
+                      onChange={(e) => handleQuestionChange(currentQuestion, "text", e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -936,7 +996,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                           updates.columns = ["", ""];
                         }
                         
-                        setCurrentQuestion({ ...currentQuestion, ...updates });
+                        handleQuestionChange(currentQuestion, "type", value);
                       }}
                     >
                       <SelectTrigger>
@@ -960,7 +1020,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                       <Switch
                         id="question-required"
                         checked={currentQuestion.required}
-                        onCheckedChange={(checked) => setCurrentQuestion({ ...currentQuestion, required: checked })}
+                        onCheckedChange={(checked) => handleQuestionChange(currentQuestion, "required", checked)}
                       />
                     </div>
                     
@@ -973,17 +1033,14 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             checked={!!currentQuestion.conditional}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setCurrentQuestion({
-                                  ...currentQuestion,
-                                  conditional: {
-                                    dependsOn: formData.questions.length > 0 ? formData.questions[0].id : "",
-                                    operator: "OR",
-                                    conditions: [{ type: "equals", value: "" }]
-                                  }
+                                handleQuestionChange(currentQuestion, "conditional", {
+                                  dependsOn: formData.questions.length > 0 ? formData.questions[0].id : "",
+                                  operator: "OR",
+                                  conditions: [{ type: "equals", value: "" }]
                                 });
                               } else {
                                 const { conditional, ...rest } = currentQuestion;
-                                setCurrentQuestion(rest as Question);
+                                handleQuestionChange(rest as Question, "conditional", undefined);
                               }
                             }}
                           />
@@ -995,16 +1052,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                               <Label>Exibir esta pergunta se</Label>
                               <Select
                                 value={currentQuestion.conditional.dependsOn}
-                                onValueChange={(value) => {
-                                  setCurrentQuestion({
-                                    ...currentQuestion,
-                                    conditional: {
-                                      ...currentQuestion.conditional!,
-                                      dependsOn: value,
-                                      conditions: [{ type: "equals", value: "" }]
-                                    }
-                                  });
-                                }}
+                                onValueChange={(value) => handleConditionChange(currentQuestion, 0, "dependsOn", value)}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Selecione a pergunta" />
@@ -1029,15 +1077,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                       ? "bg-blue-100 text-blue-800" 
                                       : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                                   }`}
-                                  onClick={() => 
-                                    setCurrentQuestion({
-                                      ...currentQuestion,
-                                      conditional: {
-                                        ...currentQuestion.conditional,
-                                        operator: "OR"
-                                      }
-                                    })
-                                  }
+                                  onClick={() => handleConditionOperatorChange(currentQuestion, currentQuestion.conditional, 0, "OR")}
                                 >
                                   OU (qualquer condição)
                                 </button>
@@ -1048,15 +1088,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                       ? "bg-blue-100 text-blue-800" 
                                       : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                                   }`}
-                                  onClick={() => 
-                                    setCurrentQuestion({
-                                      ...currentQuestion,
-                                      conditional: {
-                                        ...currentQuestion.conditional,
-                                        operator: "AND"
-                                      }
-                                    })
-                                  }
+                                  onClick={() => handleConditionOperatorChange(currentQuestion, currentQuestion.conditional, 0, "AND")}
                                 >
                                   E (todas as condições)
                                 </button>
@@ -1084,7 +1116,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                 <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                                   <Select
                                     value={condition.type}
-                                    onValueChange={(value: "equals" | "contains") => updateCondition(idx, "type", value)}
+                                    onValueChange={(value: "equals" | "contains") => handleConditionChange(currentQuestion, idx, "type", value)}
                                   >
                                     <SelectTrigger>
                                       <SelectValue />
@@ -1104,7 +1136,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                       return (
                                         <Input
                                           value={condition.value}
-                                          onChange={(e) => updateCondition(idx, "value", e.target.value)}
+                                          onChange={(e) => handleConditionChange(currentQuestion, idx, "value", e.target.value)}
                                           placeholder="Valor"
                                         />
                                       );
@@ -1118,7 +1150,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                       return (
                                         <Select
                                           value={condition.value}
-                                          onValueChange={(value) => updateCondition(idx, "value", value)}
+                                          onValueChange={(value) => handleConditionChange(currentQuestion, idx, "value", value)}
                                         >
                                           <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção" />
@@ -1137,7 +1169,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                     return (
                                       <Input
                                         value={condition.value}
-                                        onChange={(e) => updateCondition(idx, "value", e.target.value)}
+                                        onChange={(e) => handleConditionChange(currentQuestion, idx, "value", e.target.value)}
                                         placeholder="Valor"
                                       />
                                     );
@@ -1171,7 +1203,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                           <div key={index} className="flex gap-2">
                             <Input
                               value={option}
-                              onChange={(e) => updateOption(index, e.target.value)}
+                              onChange={(e) => handleOptionChange(currentQuestion, index, e.target.value)}
                               placeholder={`Opção ${index + 1}`}
                             />
                             <Button
@@ -1179,7 +1211,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                               variant="ghost"
                               size="icon"
                               className="shrink-0 text-muted-foreground hover:text-red-500"
-                              onClick={() => removeOption(index)}
+                              onClick={() => handleOptionDelete(option)}
                               disabled={currentQuestion.options.length <= 2}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1211,7 +1243,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             <div key={index} className="flex gap-2">
                               <Input
                                 value={row}
-                                onChange={(e) => updateRow(index, e.target.value)}
+                                onChange={(e) => handleQuestionChange(currentQuestion, "rows", [...(currentQuestion.rows || []), e.target.value])}
                                 placeholder={`Linha ${index + 1}`}
                               />
                               <Button
@@ -1219,7 +1251,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 text-muted-foreground hover:text-red-500"
-                                onClick={() => removeRow(index)}
+                                onClick={() => handleQuestionChange(currentQuestion, "rows", currentQuestion.rows?.filter((_, i) => i !== index))}
                                 disabled={(currentQuestion.rows?.length || 0) <= 2}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1232,7 +1264,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             variant="outline"
                             size="sm"
                             className="mt-2 w-full"
-                            onClick={addRow}
+                            onClick={() => handleQuestionChange(currentQuestion, "rows", [...(currentQuestion.rows || []), ""])}
                             disabled={(currentQuestion.rows?.length || 0) >= 10}
                           >
                             <Plus className="mr-2 h-4 w-4" />
@@ -1248,7 +1280,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             <div key={index} className="flex gap-2">
                               <Input
                                 value={column}
-                                onChange={(e) => updateColumn(index, e.target.value)}
+                                onChange={(e) => handleQuestionChange(currentQuestion, "columns", [...(currentQuestion.columns || []), e.target.value])}
                                 placeholder={`Coluna ${index + 1}`}
                               />
                               <Button
@@ -1256,7 +1288,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 text-muted-foreground hover:text-red-500"
-                                onClick={() => removeColumn(index)}
+                                onClick={() => handleQuestionChange(currentQuestion, "columns", currentQuestion.columns?.filter((_, i) => i !== index))}
                                 disabled={(currentQuestion.columns?.length || 0) <= 2}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1269,7 +1301,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             variant="outline"
                             size="sm"
                             className="mt-2 w-full"
-                            onClick={addColumn}
+                            onClick={() => handleQuestionChange(currentQuestion, "columns", [...(currentQuestion.columns || []), ""])}
                             disabled={(currentQuestion.columns?.length || 0) >= 10}
                           >
                             <Plus className="mr-2 h-4 w-4" />

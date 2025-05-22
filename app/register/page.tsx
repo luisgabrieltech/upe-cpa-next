@@ -152,11 +152,11 @@ export default function RegisterPage() {
 
       if (result?.error) {
         setFormError("Sua conta foi criada, mas houve um erro ao fazer login. Por favor, faça login manualmente.")
-        router.push("/login")
+        router.push(routes.auth.login)
         return
       }
 
-      router.push("/dashboard")
+      router.push(routes.dashboard.home)
       router.refresh()
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Ocorreu um erro ao criar sua conta")
@@ -324,7 +324,7 @@ export default function RegisterPage() {
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 Já tem uma conta?{" "}
-                <Link href="/login" className="text-upe-blue hover:underline">
+                <Link href={routes.auth.login} className="text-upe-blue hover:underline">
                   Entrar
                 </Link>
               </p>

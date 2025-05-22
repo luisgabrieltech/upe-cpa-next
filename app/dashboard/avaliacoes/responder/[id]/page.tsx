@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { routes } from "@/lib/routes"
 
 interface Question {
   id: string
@@ -162,7 +163,7 @@ export default function ResponderAvaliacaoPage() {
       <div className="w-full p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/avaliacoes")}>
+            <Button variant="ghost" size="icon" onClick={() => router.push(routes.dashboard.evaluations.home)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>

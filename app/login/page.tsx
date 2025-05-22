@@ -50,7 +50,7 @@ export default function LoginPage() {
 
       if (!result || result.error || result.status === 401) {
         if (result?.error && result.error.trim().toLowerCase() === "conta inativada") {
-          router.push("/conta-inativada")
+          router.push(routes.auth.accountInactive)
           setIsLoading(false)
           return
         }
@@ -64,7 +64,7 @@ export default function LoginPage() {
         description: "Redirecionando para o dashboard...",
       })
 
-      router.push("/dashboard")
+      router.push(routes.dashboard.home)
       router.refresh()
     } catch (error) {
       setFormError("Ocorreu um erro ao tentar fazer login. Tente novamente.")
@@ -145,14 +145,14 @@ export default function LoginPage() {
             <CardFooter className="flex flex-col gap-4">
               <Button
                 type="submit"
-                className="w-full bg-upe-blue hover:bg-upe-darkblue"
+                className="w-full bg-upe-blue hover:bg-upe-blue/90"
                 disabled={isLoading}
               >
                 {isLoading ? "Entrando..." : "Entrar"}
               </Button>
               <div className="text-center">
                 <Link
-                  href="/forgot-password"
+                  href={routes.auth.forgotPassword}
                   className="text-sm text-muted-foreground hover:text-upe-blue"
                 >
                   Esqueceu sua senha?
@@ -160,7 +160,7 @@ export default function LoginPage() {
               </div>
               <p className="mt-4 text-center text-sm text-muted-foreground">
                 Não tem uma conta?{" "}
-                <Link href="/register" className="text-upe-blue hover:underline">
+                <Link href={routes.auth.register} className="text-upe-blue hover:underline">
                   Cadastre-se
                 </Link>
               </p>

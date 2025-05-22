@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useSession, signOut } from "next-auth/react"
+import { routes } from "@/lib/routes"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -53,25 +54,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isAdmin = hasAdminAccess(session?.user?.role || "")
 
   const isMenuItemActive = (href: string) => {
-    if (href === "/dashboard") {
-      return pathname === "/dashboard"
+    if (href === routes.dashboard.home) {
+      return pathname === routes.dashboard.home
     }
-    return pathname === href || (pathname.startsWith(href + "/") && pathname !== "/dashboard")
+    return pathname === href || (pathname.startsWith(href + "/") && pathname !== routes.dashboard.home)
   }
 
-
   const isAdminItemActive = (href: string) => {
-    if (href === "/dashboard/admin") {
-      return pathname === "/dashboard/admin"
+    if (href === routes.dashboard.admin.home) {
+      return pathname === routes.dashboard.admin.home
     }
-    if (href === "/dashboard/admin/formularios") {
-      return pathname === "/dashboard/admin/formularios" || pathname.startsWith("/dashboard/admin/formularios/")
+    if (href === routes.dashboard.admin.forms.home) {
+      return pathname === routes.dashboard.admin.forms.home || pathname.startsWith(routes.dashboard.admin.forms.home + "/")
     }
-    if (href === "/dashboard/admin/usuarios") {
-      return pathname === "/dashboard/admin/usuarios" || pathname.startsWith("/dashboard/admin/usuarios/")
+    if (href === routes.dashboard.admin.users.home) {
+      return pathname === routes.dashboard.admin.users.home || pathname.startsWith(routes.dashboard.admin.users.home + "/")
     }
-    if (href === "/dashboard/admin/relatorios") {
-      return pathname === "/dashboard/admin/relatorios" || pathname.startsWith("/dashboard/admin/relatorios/")
+    if (href === routes.dashboard.admin.reports.home) {
+      return pathname === routes.dashboard.admin.reports.home || pathname.startsWith(routes.dashboard.admin.reports.home + "/")
     }
     return false
   }
@@ -81,7 +81,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="hidden md:block">
         <div className="fixed h-screen w-64 flex flex-col border-r bg-white overflow-hidden">
           <div className="flex h-16 items-center border-b px-4 flex-shrink-0 justify-center">
-            <Link href="/dashboard" className="flex items-center gap-8">
+            <Link href={routes.dashboard.home} className="flex items-center gap-8">
               <Image src="/upe-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
               <Image src="/cpa-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
             </Link>
@@ -162,12 +162,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/configuracoes" className="w-full">Ver perfil</Link>
+                    <Link href={routes.dashboard.settings} className="w-full">Ver perfil</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer text-red-600"
-                    onClick={() => signOut({ callbackUrl: "/" })}
+                    onClick={() => signOut({ callbackUrl: routes.auth.login })}
                   >
                     Sair
                   </DropdownMenuItem>
@@ -191,7 +191,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
               <div className="flex h-16 items-center border-b px-4">
-                <Link href="/dashboard" className="flex items-center gap-2">
+                <Link href={routes.dashboard.home} className="flex items-center gap-2">
                   <Image src="/upe-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
                   <span className="text-lg font-medium">CPA</span>
                 </Link>

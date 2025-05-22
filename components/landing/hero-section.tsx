@@ -60,7 +60,7 @@ export function HeroSection() {
         transition={{ duration: 0.5, delay: 0.4 }}
         className="flex flex-col sm:flex-row gap-4 mt-4"
       >
-        <Link href={routes.login}>
+        <Link href={routes.auth.login}>
           <Button size="lg" className="gap-2 bg-upe-red hover:bg-upe-red/90">
             Participar da Avaliação <ArrowRight className="h-4 w-4" />
           </Button>

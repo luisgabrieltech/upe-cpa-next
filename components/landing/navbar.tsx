@@ -14,7 +14,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href={routes.home} className="flex items-center space-x-2">
             <Image src="/upe-logo.png" alt="Logo UPE" width={100} height={40} className="h-10 w-auto" />
           </Link>
         </div>
@@ -30,14 +30,14 @@ export function Navbar() {
           ))}
         </nav>
         <div className="hidden md:flex gap-4">
-          <Link href="/login">
+          <Link href={routes.auth.login}>
             <Button variant="outline" size="sm" className="border-upe-blue text-upe-blue hover:bg-upe-blue/10">
               Entrar
             </Button>
           </Link>
-          <Link href="/register">
+          <Link href={routes.auth.register}>
             <Button size="sm" className="bg-upe-red hover:bg-upe-red/90 text-white">
-              Cadastrar
+              Registrar
             </Button>
           </Link>
         </div>
@@ -59,13 +59,13 @@ export function Navbar() {
               </Link>
             ))}
             <div className="flex flex-col gap-2 mt-4">
-              <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+              <Link href={routes.auth.login} onClick={() => setIsMenuOpen(false)}>
                 <Button variant="outline" className="w-full border-upe-blue text-upe-blue hover:bg-upe-blue/10">
                   Entrar
                 </Button>
               </Link>
-              <Link href="/register" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full bg-upe-red hover:bg-upe-red/90 text-white">Cadastrar</Button>
+              <Link href={routes.auth.register} onClick={() => setIsMenuOpen(false)}>
+                <Button className="w-full bg-upe-red hover:bg-upe-red/90 text-white">Registrar</Button>
               </Link>
             </div>
           </nav>
