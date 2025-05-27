@@ -9,6 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Calendar, CheckCircle2, Clock, FileText, Info } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
+import { getApiUrl } from "@/lib/api-utils"
+import { routes } from "@/lib/routes"
 
 export default function DashboardPage() {
   const { data: session } = useSession()
@@ -20,11 +22,11 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true)
       // Buscar formulários disponíveis
-      const formsRes = await fetch("/api/forms?available=true")
+      const formsRes = await fetch(getApiUrl('forms?available=true'))
       const formsData = formsRes.ok ? await formsRes.json() : []
       setForms(formsData)
       // Buscar respostas do usuário
-      const respRes = await fetch("/api/responses?userId=" + session?.user?.id)
+      const respRes = await fetch(getApiUrl('responses?userId=' + session?.user?.id))
       const respData = respRes.ok ? await respRes.json() : []
       setResponses(respData)
       setLoading(false)
@@ -152,7 +154,7 @@ export default function DashboardPage() {
 
               <div className="mt-4">
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/dashboard/avaliacoes">Ver todas as avaliações</Link>
+                  <Link href={routes.dashboard.evaluations.home}>Ver todas as avaliações</Link>
                 </Button>
               </div>
             </div>

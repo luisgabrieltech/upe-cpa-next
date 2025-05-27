@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
+import { getApiUrl } from "@/lib/api-utils"
 
 function MagicAuthContent() {
   const router = useRouter()
@@ -22,7 +23,7 @@ function MagicAuthContent() {
     const authenticate = async () => {
       setStatus("loading")
       setMessage("")
-      const res = await fetch(`/api/magic-link?token=${token}`)
+      const res = await fetch(getApiUrl(`magic-link?token=${token}`))
       const data = await res.json()
       if (res.ok && data.user) {
         await signIn("credentials", {

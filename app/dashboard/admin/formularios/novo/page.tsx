@@ -23,6 +23,7 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import React from "react"
 import { routes } from "@/lib/routes"
+import { getApiUrl } from "@/lib/api-utils"
 
 interface Question {
   id: string
@@ -389,7 +390,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
 
   const saveForm = async () => {
     try {
-      const res = await fetch("/api/forms", {
+      const res = await fetch(getApiUrl('forms'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -421,7 +422,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
         }),
       })
       if (res.ok) {
-        router.push("/dashboard/admin/formularios")
+        router.push(routes.dashboard.admin.forms.home)
       } else {
         alert("Erro ao salvar formulário")
       }

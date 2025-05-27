@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useEffect, useState } from "react"
+import { getApiUrl } from "@/lib/api-utils"
 
 export default function AdminDashboardPage() {
   const [userCount, setUserCount] = useState<number | null>(null)
@@ -43,14 +44,14 @@ export default function AdminDashboardPage() {
     const fetchData = async () => {
       setLoading(true)
       // Buscar usuários
-      const userRes = await fetch("/api/user")
+      const userRes = await fetch(getApiUrl('user'))
       let users = []
       if (userRes.ok) {
         users = await userRes.json()
         setUserCount(users.length)
       }
       // Buscar formulários
-      const formRes = await fetch("/api/forms")
+      const formRes = await fetch(getApiUrl('forms'))
       let forms = []
       if (formRes.ok) {
         forms = await formRes.json()

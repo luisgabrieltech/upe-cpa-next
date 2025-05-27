@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import NovoFormularioPage from "../page"
+import { getApiUrl } from "@/lib/api-utils"
 
 export default function EditarFormularioPage() {
   const { id } = useParams<{ id: string }>()
@@ -12,7 +13,7 @@ export default function EditarFormularioPage() {
   useEffect(() => {
     const fetchForm = async () => {
       setLoading(true)
-      const res = await fetch(`/api/forms?id=${id}`)
+      const res = await fetch(getApiUrl(`forms?id=${id}`))
       if (res.ok) {
         const data = await res.json()
         setFormData(data)

@@ -3,12 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
+import { routes } from "@/lib/routes"
+import { getAuthApiUrl } from "@/lib/api-utils"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -20,7 +22,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/forgot-password", {
+      const response = await fetch(getAuthApiUrl('forgot-password'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

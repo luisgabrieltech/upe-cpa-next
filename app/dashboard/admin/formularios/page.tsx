@@ -54,6 +54,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox"
 import { ColumnDef } from "@/components/ui/table"
 import { useRouter } from "next/navigation"
+import { getApiUrl } from "@/lib/api-utils"
+import { routes } from "@/lib/routes"
 
 export default function AdminFormulariosPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -85,7 +87,7 @@ export default function AdminFormulariosPage() {
   useEffect(() => {
     const fetchForms = async () => {
       setLoading(true)
-      const res = await fetch("/api/forms")
+      const res = await fetch(getApiUrl('forms'))
       if (res.ok) {
         const data = await res.json()
         setForms(data)
@@ -124,7 +126,7 @@ export default function AdminFormulariosPage() {
   // Função para confirmar a exclusão
   const confirmDelete = async () => {
     if (!deleteFormId) return
-    await fetch(`/api/forms`, {
+    await fetch(getApiUrl('forms'), {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: deleteFormId }),
@@ -278,7 +280,7 @@ export default function AdminFormulariosPage() {
                 <span>Gerenciar visibilidade</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={async () => {
-                const res = await fetch(`/api/forms?id=${form.id}`)
+                const res = await fetch(getApiUrl(`forms?id=${form.id}`))
                 if (res.ok) {
                   const data = await res.json()
                   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -314,7 +316,7 @@ export default function AdminFormulariosPage() {
 
   const updateFormStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch("/api/forms?action=status", {
+      const res = await fetch(getApiUrl('forms?action=status'), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
@@ -331,7 +333,7 @@ export default function AdminFormulariosPage() {
 
   const updateFormExternalStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch("/api/forms?action=external-status", {
+      const res = await fetch(getApiUrl('forms?action=external-status'), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
@@ -348,7 +350,7 @@ export default function AdminFormulariosPage() {
 
   const deleteForm = async (id: string) => {
     try {
-      const res = await fetch("/api/forms?id=" + id, {
+      const res = await fetch(getApiUrl(`forms?id=${id}`), {
         method: "DELETE",
       })
       if (res.ok) {
@@ -374,7 +376,7 @@ export default function AdminFormulariosPage() {
             <p className="text-muted-foreground">Crie, edite e gerencie formulários de avaliação</p>
           </div>
           <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" asChild>
-            <Link href="/dashboard/admin/formularios/novo">
+            <Link href={routes.dashboard.admin.forms.new}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Formulário
             </Link>
@@ -518,7 +520,7 @@ export default function AdminFormulariosPage() {
                                     <span>Gerenciar visibilidade</span>
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={async () => {
-                                    const res = await fetch(`/api/forms?id=${form.id}`)
+                                    const res = await fetch(getApiUrl(`forms?id=${form.id}`))
                                     if (res.ok) {
                                       const data = await res.json()
                                       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -678,7 +680,7 @@ export default function AdminFormulariosPage() {
               </Button>
               <Button className="bg-upe-blue text-white" onClick={async () => {
                 if (!visibilityFormId) return
-                const res = await fetch(`/api/forms?action=visibility`, {
+                const res = await fetch(getApiUrl('forms?action=visibility'), {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({

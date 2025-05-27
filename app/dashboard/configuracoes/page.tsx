@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, Mail, School, Building, Bell, Shield, Lock, Upload } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { getApiUrl } from "@/lib/api-utils"
 
 export default function ConfiguracoesPage() {
   const { data: session } = useSession()
@@ -34,7 +35,7 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch("/api/user/profile")
+        const response = await fetch(getApiUrl('user/profile'))
         if (response.ok) {
           const data = await response.json()
           setUserData((prev) => ({
@@ -69,7 +70,7 @@ export default function ConfiguracoesPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/user/profile", {
+      const response = await fetch(getApiUrl('user/profile'), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { routes } from "@/lib/routes"
+import { getAuthApiUrl } from "@/lib/api-utils"
 
 export default function ResetPasswordPage({ params }: { params: { token: string } }) {
   const [showPassword, setShowPassword] = useState(false)
@@ -36,7 +37,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
     }
 
     try {
-      const response = await fetch("/api/auth/reset-password", {
+      const response = await fetch(getAuthApiUrl('reset-password'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

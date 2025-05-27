@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { routes } from "@/lib/routes"
+import { getApiUrl } from "@/lib/api-utils"
 
 interface Question {
   id: string
@@ -87,7 +88,7 @@ export default function ResponderAvaliacaoPage() {
   useEffect(() => {
     const fetchForm = async () => {
       setLoading(true)
-      const res = await fetch(`/api/forms?id=${params.id}`)
+      const res = await fetch(getApiUrl(`forms?id=${params.id}`))
       if (res.ok) {
         const data = await res.json()
         setFormData(data)
@@ -112,14 +113,14 @@ export default function ResponderAvaliacaoPage() {
         questionId,
         value: Array.isArray(value) ? value.join(", ") : String(value ?? "")
       }))
-      const res = await fetch("/api/responses", {
+      const res = await fetch(getApiUrl('responses'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ responses: payload }),
       })
       if (res.ok) {
         toast.success("Avaliação enviada com sucesso!")
-        router.push("/dashboard/avaliacoes")
+        router.push(routes.dashboard.evaluations.home)
       } else {
         toast.error("Erro ao enviar avaliação. Tente novamente.")
       }

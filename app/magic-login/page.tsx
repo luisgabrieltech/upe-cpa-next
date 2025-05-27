@@ -1,15 +1,25 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { motion } from "framer-motion"
+import { ArrowLeft, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/components/ui/use-toast"
+import Link from "next/link"
+import { routes } from "@/lib/routes"
+import { getApiUrl } from "@/lib/api-utils"
 
-export default function MagicLoginPage() {
+function MagicLoginContent() {
   const [email, setEmail] = useState("")
   const [magicLink, setMagicLink] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -17,7 +27,7 @@ export default function MagicLoginPage() {
     setError("")
     setMagicLink("")
     try {
-      const res = await fetch("/api/magic-link", {
+      const res = await fetch(getApiUrl('magic-link'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -64,5 +74,24 @@ export default function MagicLoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function MagicLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full p-4 md:p-6 flex justify-center items-center min-h-screen bg-muted">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Carregando...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Iniciando página...</p>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <MagicLoginContent />
+    </Suspense>
   )
 } 

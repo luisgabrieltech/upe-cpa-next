@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getApiUrl } from "@/lib/api-utils"
 
 export default function AdminUsuariosPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -69,7 +70,7 @@ export default function AdminUsuariosPage() {
   // Função para buscar usuários (fora do useEffect)
   const fetchUsers = async () => {
     setLoading(true)
-    const res = await fetch("/api/user")
+    const res = await fetch(getApiUrl('user'))
     if (res.ok) {
       const data = await res.json()
       setUsers(data)
@@ -124,7 +125,7 @@ export default function AdminUsuariosPage() {
   const confirmDelete = async () => {
     if (!selectedUserId) return
     try {
-      const res = await fetch(`/api/user/${selectedUserId}`, {
+      const res = await fetch(getApiUrl(`user/${selectedUserId}`), {
         method: "DELETE",
       })
       if (res.ok) {
@@ -147,7 +148,7 @@ export default function AdminUsuariosPage() {
     setResetPasswordSuccess(null)
     setResetPasswordError(null)
     try {
-      const res = await fetch(`/api/user/${selectedUserId}/reset-password`, {
+      const res = await fetch(getApiUrl(`user/${selectedUserId}/reset-password`), {
         method: "POST",
       })
       const data = await res.json()
@@ -169,7 +170,7 @@ export default function AdminUsuariosPage() {
     setStatusError(null)
     setStatusSuccess(null)
     try {
-      const res = await fetch(`/api/user/${userId}`, {
+      const res = await fetch(getApiUrl(`user/${userId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: true }),
@@ -195,7 +196,7 @@ export default function AdminUsuariosPage() {
     setStatusError(null)
     setStatusSuccess(null)
     try {
-      const res = await fetch(`/api/user/${userId}`, {
+      const res = await fetch(getApiUrl(`user/${userId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: false }),
@@ -221,7 +222,7 @@ export default function AdminUsuariosPage() {
     setRoleLoading(true)
     setRoleError(null)
     try {
-      const res = await fetch(`/api/user/${selectedUser.id}`, {
+      const res = await fetch(getApiUrl(`user/${selectedUser.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: selectedRole }),
@@ -611,8 +612,8 @@ export default function AdminUsuariosPage() {
               <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)} disabled={roleLoading}>
                 Cancelar
               </Button>
-              <Button className="bg-upe-blue text-white" onClick={confirmRoleChange} loading={roleLoading}>
-                Salvar
+              <Button className="bg-upe-blue text-white" onClick={confirmRoleChange} disabled={roleLoading}>
+                {roleLoading ? "Salvando..." : "Salvar"}
               </Button>
             </DialogFooter>
           </DialogContent>

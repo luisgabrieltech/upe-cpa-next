@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Clock, FileText, Search } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import { getApiUrl } from "@/lib/api-utils"
 
 export default function AvaliacoesPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -21,8 +22,8 @@ export default function AvaliacoesPage() {
     const fetchData = async () => {
       setLoading(true)
       const [formsRes, responsesRes] = await Promise.all([
-        fetch("/api/forms"),
-        fetch("/api/responses?user=me"),
+        fetch(getApiUrl('forms')),
+        fetch(getApiUrl('responses?user=me')),
       ])
       if (formsRes.ok) {
         setForms(await formsRes.json())

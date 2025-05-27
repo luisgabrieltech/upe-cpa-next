@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getApiUrl } from "@/lib/api-utils"
 
 export default function PreviewFormularioPage() {
   const params = useParams()
@@ -19,7 +20,7 @@ export default function PreviewFormularioPage() {
   useEffect(() => {
     const fetchForm = async () => {
       setLoading(true)
-      const res = await fetch(`/api/forms?id=${params.id}`)
+      const res = await fetch(getApiUrl(`forms?id=${params.id}`))
       if (res.ok) {
         const data = await res.json()
         setFormData(data)

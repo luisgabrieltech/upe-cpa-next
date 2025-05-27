@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
 import { routes } from "@/lib/routes"
+import { getAuthApiUrl } from "@/lib/api-utils"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -117,7 +118,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch(getAuthApiUrl('register'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

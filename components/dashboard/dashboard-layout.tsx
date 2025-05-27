@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useSession, signOut } from "next-auth/react"
 import { routes } from "@/lib/routes"
+import { getApiUrl } from "@/lib/api-utils"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -40,9 +41,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     const fetchPending = async () => {
       if (!session?.user?.id) return;
-      const formsRes = await fetch("/api/forms?available=true")
+      const formsRes = await fetch(getApiUrl('forms?available=true'))
       const formsData = formsRes.ok ? await formsRes.json() : []
-      const respRes = await fetch("/api/responses?userId=" + session.user.id)
+      const respRes = await fetch(getApiUrl('responses?userId=' + session.user.id))
       const respData = respRes.ok ? await respRes.json() : []
       const respondedFormIds = new Set(respData.map((r: any) => r.formId))
       const pending = formsData.filter((f: any) => f.externalStatus === 'AVAILABLE' && !respondedFormIds.has(f.id))
