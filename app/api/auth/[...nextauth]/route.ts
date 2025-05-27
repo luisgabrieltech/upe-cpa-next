@@ -1,12 +1,12 @@
 import { NextAuthOptions } from "next-auth"
 import NextAuth from "next-auth/next"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import { compare } from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  debug: process.env.NODE_ENV === "development",
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -16,85 +16,125 @@ export const authOptions: NextAuthOptions = {
         magic: { label: "Magic", type: "boolean" }
       },
       async authorize(credentials) {
-        if (!credentials?.email) {
-          throw new Error("Credenciais inválidas")
-        }
-        // Login mágico: se vier 'magic', não exige senha
-        if (credentials.magic) {
+        try {
+          console.log("Tentativa de login para:", credentials?.email)
+          
+          if (!credentials?.email) {
+            throw new Error("Credenciais inválidas")
+          }
+          
+          // Login mágico: se vier 'magic', não exige senha
+          if (credentials.magic) {
+            const user = await prisma.user.findUnique({
+              where: { email: credentials.email }
+            })
+            if (!user) throw new Error("Usuário não encontrado")
+            if (user.active === false) throw new Error("Conta inativada")
+            
+            console.log("Login mágico bem-sucedido para:", user.email)
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role
+            }
+          }
+          
+          // Login tradicional
+          if (!credentials?.password) {
+            throw new Error("Credenciais inválidas")
+          }
+          
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: {
+              email: credentials.email
+            }
           })
-          if (!user) throw new Error("Usuário não encontrado")
-          if (user.active === false) throw new Error("Conta inativada")
+          
+          if (!user) {
+            console.log("Usuário não encontrado:", credentials.email)
+            throw new Error("Usuário não encontrado")
+          }
+          
+          const isPasswordValid = await compare(credentials.password, user.password)
+          if (!isPasswordValid) {
+            console.log("Senha incorreta para:", credentials.email)
+            throw new Error("Senha incorreta")
+          }
+          
+          if (user.active === false) {
+            console.log("Conta inativada:", credentials.email)
+            throw new Error("Conta inativada")
+          }
+          
+          console.log("Login bem-sucedido para:", user.email)
           return {
             id: user.id,
             email: user.email,
             name: user.name,
             role: user.role
           }
-        }
-        // Login tradicional
-        if (!credentials?.password) {
-          throw new Error("Credenciais inválidas")
-        }
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
-        })
-        if (!user) {
-          throw new Error("Usuário não encontrado")
-        }
-        const isPasswordValid = await compare(credentials.password, user.password)
-        if (!isPasswordValid) {
-          throw new Error("Senha incorreta")
-        }
-        if (user.active === false) {
-          throw new Error("Conta inativada")
-        }
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
+        } catch (error) {
+          console.error("Erro no authorize:", error)
+          throw error
         }
       }
     })
   ],
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
   },
-  pages: {
-    signIn: "/login"
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        return {
-          ...token,
-          id: user.id,
-          role: user.role
+      try {
+        if (user) {
+          console.log("JWT callback - user:", user.email)
+          return {
+            ...token,
+            id: user.id,
+            role: user.role
+          }
         }
+        return token
+      } catch (error) {
+        console.error("Erro no callback JWT:", error)
+        return token
       }
-      return token
     },
     async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          role: token.role
+      try {
+        console.log("Session callback - token:", token.sub)
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: token.id as string,
+            role: token.role as string
+          }
         }
+      } catch (error) {
+        console.error("Erro no callback session:", error)
+        return session
       }
+    }
+  },
+  pages: {
+    signIn: "/login",
+    error: "/auth/error"
+  },
+  events: {
+    async signIn(message) {
+      console.log("Event signIn:", message.user?.email)
     },
-    async redirect({ url, baseUrl }) {
-      // Se a URL contiver magic=true, redireciona para o dashboard
-      if (url.includes("magic=true")) {
-        return `${baseUrl}/dashboard`
-      }
-      // Caso contrário, mantém o comportamento padrão
-      return url.startsWith(baseUrl) ? url : baseUrl
+    async signOut(message) {
+      console.log("Event signOut:", message.token?.sub)
+    },
+    async session(message) {
+      console.log("Event session:", message.session?.user?.email)
     }
   }
 }
