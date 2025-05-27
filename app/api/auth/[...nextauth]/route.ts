@@ -120,6 +120,16 @@ export const authOptions: NextAuthOptions = {
         console.error("Erro no callback session:", error)
         return session
       }
+    },
+    async redirect({ url, baseUrl }) {
+      // Força redirecionamentos para usar o subpath correto
+      if (url.startsWith("/")) {
+        return `${baseUrl}/sistemacpa${url}`
+      }
+      if (url.startsWith(baseUrl)) {
+        return url.replace(baseUrl, `${baseUrl}/sistemacpa`)
+      }
+      return url
     }
   },
   pages: {
