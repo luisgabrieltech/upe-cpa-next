@@ -20,7 +20,7 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/sistemacpa/dashboard/:path*",
-    "/sistemacpa/api/admin/:path*"
+    "/dashboard/:path*",
+    "/api/admin/:path*"
   ]
 } 
