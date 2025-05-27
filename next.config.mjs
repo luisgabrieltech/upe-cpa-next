@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // basePath: '/sistemacpa',  // ← Comentado temporariamente
-  // assetPrefix: '/sistemacpa',  // ← Comentado temporariamente
+  // basePath: '/sistemacpa',  // ← Mantém comentado (nginx gerencia)
+  assetPrefix: '/sistemacpa',  // ← Para CSS/JS carregarem corretamente
   trailingSlash: false,
   eslint: {
     ignoreDuringBuilds: true,

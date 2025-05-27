@@ -1,68 +1,68 @@
-export const basePath = ''; // '/sistemacpa' ← Removido temporariamente
+export const basePath = '/sistemacpa'; // Voltando o basePath
 
 export const routes = {
   // Rotas principais
-  home: `/`,
-  about: `/#about`,
-  benefits: `/#benefits`,
-  contact: `/#contact`,
+  home: `${basePath}/`,
+  about: `${basePath}/#about`,
+  benefits: `${basePath}/#benefits`,
+  contact: `${basePath}/#contact`,
 
   // Rotas de autenticação
   auth: {
-    login: `/login`,
-    register: `/register`,
-    forgotPassword: `/forgot-password`,
-    resetPassword: `/reset-password`,
-    accountInactive: `/conta-inativada`,
+    login: `${basePath}/login`,
+    register: `${basePath}/register`,
+    forgotPassword: `${basePath}/forgot-password`,
+    resetPassword: `${basePath}/reset-password`,
+    accountInactive: `${basePath}/conta-inativada`,
   },
   
   // Rotas do dashboard
   dashboard: {
-    home: `/dashboard`,
-    profile: `/dashboard/perfil`,
-    settings: `/dashboard/configuracoes`,
+    home: `${basePath}/dashboard`,
+    profile: `${basePath}/dashboard/perfil`,
+    settings: `${basePath}/dashboard/configuracoes`,
     
     // Avaliações
     evaluations: {
-      home: `/dashboard/avaliacoes`,
-      respond: (id: string) => `/dashboard/avaliacoes/responder/${id}`,
-      view: (id: string) => `/dashboard/avaliacoes/${id}`,
+      home: `${basePath}/dashboard/avaliacoes`,
+      respond: (id: string) => `${basePath}/dashboard/avaliacoes/responder/${id}`,
+      view: (id: string) => `${basePath}/dashboard/avaliacoes/${id}`,
     },
     
     // Administração
     admin: {
-      home: `/dashboard/admin`,
+      home: `${basePath}/dashboard/admin`,
       
       // Formulários (Admin)
       forms: {
-        home: `/dashboard/admin/formularios`,
-        new: `/dashboard/admin/formularios/novo`,
-        edit: (id: string) => `/dashboard/admin/formularios/${id}/editar`,
-        view: (id: string) => `/dashboard/admin/formularios/${id}`,
-        responses: (id: string) => `/dashboard/admin/formularios/${id}/respostas`,
+        home: `${basePath}/dashboard/admin/formularios`,
+        new: `${basePath}/dashboard/admin/formularios/novo`,
+        edit: (id: string) => `${basePath}/dashboard/admin/formularios/${id}/editar`,
+        view: (id: string) => `${basePath}/dashboard/admin/formularios/${id}`,
+        responses: (id: string) => `${basePath}/dashboard/admin/formularios/${id}/respostas`,
       },
       
       // Relatórios (Admin)
       reports: {
-        home: `/dashboard/admin/relatorios`,
-        view: (id: string) => `/dashboard/admin/relatorios/${id}`,
-        generate: `/dashboard/admin/relatorios/gerar`,
+        home: `${basePath}/dashboard/admin/relatorios`,
+        view: (id: string) => `${basePath}/dashboard/admin/relatorios/${id}`,
+        generate: `${basePath}/dashboard/admin/relatorios/gerar`,
       },
       
       // Usuários (Admin)
       users: {
-        home: `/dashboard/admin/usuarios`,
-        new: `/dashboard/admin/usuarios/novo`,
-        edit: (id: string) => `/dashboard/admin/usuarios/${id}/editar`,
-        view: (id: string) => `/dashboard/admin/usuarios/${id}`,
+        home: `${basePath}/dashboard/admin/usuarios`,
+        new: `${basePath}/dashboard/admin/usuarios/novo`,
+        edit: (id: string) => `${basePath}/dashboard/admin/usuarios/${id}/editar`,
+        view: (id: string) => `${basePath}/dashboard/admin/usuarios/${id}`,
       },
       
       // Configurações (Admin)
       settings: {
-        home: `/dashboard/admin/configuracoes`,
-        general: `/dashboard/admin/configuracoes/geral`,
-        email: `/dashboard/admin/configuracoes/email`,
-        notifications: `/dashboard/admin/configuracoes/notificacoes`,
+        home: `${basePath}/dashboard/admin/configuracoes`,
+        general: `${basePath}/dashboard/admin/configuracoes/geral`,
+        email: `${basePath}/dashboard/admin/configuracoes/email`,
+        notifications: `${basePath}/dashboard/admin/configuracoes/notificacoes`,
       },
     },
   },
