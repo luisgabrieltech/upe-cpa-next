@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  basePath: '/sistemacpa',
+  assetPrefix: '/sistemacpa',
   trailingSlash: false,
   eslint: {
     ignoreDuringBuilds: true,

@@ -1,0 +1,63 @@
+# Configuração do Nginx para o Sistema CPA
+# Coloque esta configuração no seu arquivo de configuração do nginx
+
+server {
+    listen 80;
+    server_name sites.upe.br;
+    
+    # Configuração para arquivos estáticos (se ainda precisar)
+    location / {
+        root /var/www/html;
+        index index.php index.html index.htm;
+        try_files $uri $uri/ =404;
+    }
+    
+    # Proxy reverso para o Next.js
+    location /sistemacpa {
+        # Remove o /sistemacpa da URL antes de enviar para o Next.js
+        # O Next.js já sabe que está rodando em /sistemacpa através do basePath
+        proxy_pass http://localhost:3000;
+        
+        # Headers importantes para o proxy
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        
+        # Timeout settings
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+    
+    # Configuração específica para assets do Next.js (CSS, JS, imagens)
+    location /sistemacpa/_next/ {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        
+        # Cache para assets estáticos
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Configuração para API routes do Next.js
+    location /sistemacpa/api/ {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+} 
