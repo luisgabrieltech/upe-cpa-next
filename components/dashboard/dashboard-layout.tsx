@@ -317,24 +317,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 const navItems = [
   {
     label: "Início",
-    href: "/dashboard",
+    href: routes.dashboard.home,
     icon: Home,
   },
   {
     label: "Avaliações",
-    href: "/dashboard/avaliacoes",
+    href: routes.dashboard.evaluations.home,
     icon: FileText,
     badge: "2",
   },
   {
     label: "Votações",
-    href: "/dashboard/votacoes",
+    href: `${routes.dashboard.home}/votacoes`,
     icon: FileText,
     disabled: true,
   },
   {
     label: "Configurações",
-    href: "/dashboard/configuracoes",
+    href: routes.dashboard.settings,
     icon: Settings,
   },
 ]
@@ -342,23 +342,23 @@ const navItems = [
 const adminItems = [
   {
     label: "Painel Administrativo",
-    href: "/dashboard/admin",
+    href: routes.dashboard.admin.home,
     icon: BarChart3,
   },
   /*{
     label: "Relatórios",
-    href: "/dashboard/admin/relatorios",
+    href: routes.dashboard.admin.reports.home,
     icon: BarChart3,
     disabled: true,
   },*/
   {
     label: "Gestão de Formulários",
-    href: "/dashboard/admin/formularios",
+    href: routes.dashboard.admin.forms.home,
     icon: ClipboardList,
   },
   {
     label: "Gestão de Usuários",
-    href: "/dashboard/admin/usuarios",
+    href: routes.dashboard.admin.users.home,
     icon: Users,
   },
 ]
