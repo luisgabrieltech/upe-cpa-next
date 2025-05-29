@@ -241,10 +241,9 @@ export default function RegisterPage() {
               </div>
               <div className="grid gap-2">
                 <Label>Cargos funcionais *</Label>
-                <p className="text-sm text-muted-foreground">Selecione seus vínculos com a UPE:</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-4 bg-gray-50/50">
+                <div className="space-y-2">
                   {FUNCTIONAL_ROLES.map((role) => (
-                    <div key={role.id} className="flex items-start space-x-2">
+                    <label key={role.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50 cursor-pointer">
                       <Checkbox
                         id={role.id}
                         checked={formData.functionalRoles.includes(role.id)}
@@ -255,17 +254,14 @@ export default function RegisterPage() {
                             setFormData({ ...formData, functionalRoles: formData.functionalRoles.filter((r) => r !== role.id) })
                           }
                         }}
-                        className="mt-0.5"
                       />
-                      <Label htmlFor={role.id} className="text-sm leading-5 cursor-pointer">
-                        {role.label}
-                      </Label>
-                    </div>
+                      <span className="text-sm">{role.label}</span>
+                    </label>
                   ))}
                 </div>
                 {formData.functionalRoles.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {formData.functionalRoles.length} cargo{formData.functionalRoles.length > 1 ? 's' : ''} selecionado{formData.functionalRoles.length > 1 ? 's' : ''}
+                  <p className="text-xs text-green-600 font-medium">
+                    ✓ {formData.functionalRoles.length} cargo{formData.functionalRoles.length > 1 ? 's' : ''} selecionado{formData.functionalRoles.length > 1 ? 's' : ''}
                   </p>
                 )}
               </div>
