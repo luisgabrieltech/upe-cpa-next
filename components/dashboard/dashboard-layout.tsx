@@ -28,7 +28,15 @@ interface DashboardLayoutProps {
 }
 
 const hasAdminAccess = (role: string) => {
-  return ["ADMIN", "COORDENADOR", "CPA"].includes(role)
+  return ["ADMIN", "CSA"].includes(role)
+}
+
+const hasFullAdminAccess = (role: string) => {
+  return role === "ADMIN"
+}
+
+const hasFormManagementAccess = (role: string) => {
+  return ["ADMIN", "CSA"].includes(role)
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -53,6 +61,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [session?.user?.id])
 
   const isAdmin = hasAdminAccess(session?.user?.role || "")
+  const isFullAdmin = hasFullAdminAccess(session?.user?.role || "")
+  const hasFormManagement = hasFormManagementAccess(session?.user?.role || "")
 
   const isMenuItemActive = (href: string) => {
     if (href === routes.dashboard.home) {
@@ -75,6 +85,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       return pathname === routes.dashboard.admin.reports.home || pathname.startsWith(routes.dashboard.admin.reports.home + "/")
     }
     return false
+  }
+
+  // Filtrar itens administrativos baseado nas permissões
+  const getAdminItems = () => {
+    const items = []
+    
+    if (isFullAdmin) {
+      items.push({
+        label: "Painel Administrativo",
+        href: routes.dashboard.admin.home,
+        icon: BarChart3,
+      })
+    }
+    
+    if (hasFormManagement) {
+      items.push({
+        label: "Gestão de Formulários",
+        href: routes.dashboard.admin.forms.home,
+        icon: ClipboardList,
+      })
+    }
+    
+    if (isFullAdmin) {
+      items.push({
+        label: "Gestão de Usuários",
+        href: routes.dashboard.admin.users.home,
+        icon: Users,
+      })
+    }
+    
+    return items
   }
 
   return (
@@ -118,7 +159,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <span>Administração</span>
                 </div>
                 <nav className="px-2">
-                  {adminItems.map((item) => (
+                  {getAdminItems().map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
@@ -230,7 +271,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <span>Administração</span>
                   </div>
                   <nav className="px-2">
-                    {adminItems.map((item) => (
+                    {getAdminItems().map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
@@ -336,29 +377,5 @@ const navItems = [
     label: "Configurações",
     href: routes.dashboard.settings,
     icon: Settings,
-  },
-]
-
-const adminItems = [
-  {
-    label: "Painel Administrativo",
-    href: routes.dashboard.admin.home,
-    icon: BarChart3,
-  },
-  /*{
-    label: "Relatórios",
-    href: routes.dashboard.admin.reports.home,
-    icon: BarChart3,
-    disabled: true,
-  },*/
-  {
-    label: "Gestão de Formulários",
-    href: routes.dashboard.admin.forms.home,
-    icon: ClipboardList,
-  },
-  {
-    label: "Gestão de Usuários",
-    href: routes.dashboard.admin.users.home,
-    icon: Users,
   },
 ]

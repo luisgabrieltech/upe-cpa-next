@@ -11,11 +11,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
 import { routes } from "@/lib/routes"
 import { getAuthApiUrl } from "@/lib/api-utils"
+
+const FUNCTIONAL_ROLES = [
+  { id: "DOCENTE", label: "Docente" },
+  { id: "DISCENTE", label: "Discente" },
+  { id: "EGRESSO", label: "Egresso" },
+  { id: "TECNICO_UNIDADES_ENSINO", label: "Técnico Administrativo das unidades de ensino" },
+  { id: "TECNICO_COMPLEXO_HOSPITALAR", label: "Técnico Administrativo do complexo Hospitalar" },
+]
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -31,7 +39,7 @@ export default function RegisterPage() {
     firstName: "",
     lastName: "",
     email: "",
-    userType: "",
+    functionalRoles: [] as string[],
   })
   const router = useRouter()
   const { toast } = useToast()
@@ -92,8 +100,12 @@ export default function RegisterPage() {
     }
 
     // Validação de campos obrigatórios
-    if (!formData.firstName || !formData.lastName || !formData.userType) {
-      setFormError("Por favor, preencha todos os campos obrigatórios")
+    if (!formData.firstName || !formData.lastName || !formData.functionalRoles.length) {
+      if (!formData.functionalRoles.length) {
+        setFormError("Por favor, selecione pelo menos um cargo funcional")
+      } else {
+        setFormError("Por favor, preencha todos os campos obrigatórios")
+      }
       setIsLoading(false)
       return
     }
@@ -127,7 +139,7 @@ export default function RegisterPage() {
           name: `${formData.firstName} ${formData.lastName}`,
           email: formData.email,
           password,
-          userType: formData.userType,
+          userType: formData.functionalRoles.join(","),
         }),
       })
 
@@ -228,22 +240,28 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="user-type">Tipo de usuário</Label>
-                <Select
-                  value={formData.userType}
-                  onValueChange={(value) => setFormData({ ...formData, userType: value })}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione seu vínculo com a UPE" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Estudante</SelectItem>
-                    <SelectItem value="professor">Professor</SelectItem>
-                    <SelectItem value="staff">Técnico Administrativo</SelectItem>
-                    <SelectItem value="external">Comunidade Externa</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Cargos funcionais *</Label>
+                <p className="text-sm text-muted-foreground mb-3">Selecione todos os cargos que se aplicam a você:</p>
+                <div className="space-y-3">
+                  {FUNCTIONAL_ROLES.map((role) => (
+                    <div key={role.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={role.id}
+                        checked={formData.functionalRoles.includes(role.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData({ ...formData, functionalRoles: [...formData.functionalRoles, role.id] })
+                          } else {
+                            setFormData({ ...formData, functionalRoles: formData.functionalRoles.filter((r) => r !== role.id) })
+                          }
+                        }}
+                      />
+                      <Label htmlFor={role.id} className="text-sm font-normal">
+                        {role.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Senha</Label>

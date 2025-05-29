@@ -14,6 +14,16 @@ export async function POST(req: Request) {
       )
     }
 
+    // Processar cargos funcionais
+    const functionalRoles = userType.split(",").filter(Boolean)
+    
+    if (functionalRoles.length === 0) {
+      return NextResponse.json(
+        { message: "Pelo menos um cargo funcional deve ser selecionado" },
+        { status: 400 }
+      )
+    }
+
     // Verificar se o email já está em uso
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -29,13 +39,16 @@ export async function POST(req: Request) {
     // Hash da senha
     const hashedPassword = await hash(password, 12)
 
-    // Criar usuário
+    // Criar usuário com os cargos funcionais (temporariamente no extraData)
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: "USER" // Por padrão, novos usuários são USER
+        role: "USER", // Por padrão, novos usuários são USER
+        extraData: {
+          functionalRoles: functionalRoles
+        }
       }
     })
 

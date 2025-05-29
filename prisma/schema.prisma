@@ -16,6 +16,7 @@ model User {
   email         String    @unique
   password      String
   role          Role      @default(USER)
+  functionalRoles FunctionalRole[]  // Múltiplos cargos funcionais
   resetToken    String?
   resetTokenExp DateTime?
   extraData     Json?     @default("{}")
@@ -79,7 +80,16 @@ model Response {
 
 enum Role {
   ADMIN
+  CSA   // Comissão Setorial de Avaliação - gerencia formulários
   USER
+}
+
+enum FunctionalRole {
+  DOCENTE
+  DISCENTE
+  EGRESSO
+  TECNICO_UNIDADES_ENSINO
+  TECNICO_COMPLEXO_HOSPITALAR
 }
 
 enum FormStatus {
