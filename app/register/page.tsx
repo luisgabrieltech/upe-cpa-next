@@ -21,8 +21,8 @@ const FUNCTIONAL_ROLES = [
   { id: "DOCENTE", label: "Docente" },
   { id: "DISCENTE", label: "Discente" },
   { id: "EGRESSO", label: "Egresso" },
-  { id: "TECNICO_UNIDADES_ENSINO", label: "Técnico Administrativo das unidades de ensino" },
-  { id: "TECNICO_COMPLEXO_HOSPITALAR", label: "Técnico Administrativo do complexo Hospitalar" },
+  { id: "TECNICO_UNIDADES_ENSINO", label: "Técnico Admin. - Unidades de Ensino" },
+  { id: "TECNICO_COMPLEXO_HOSPITALAR", label: "Técnico Admin. - Complexo Hospitalar" },
 ]
 
 export default function RegisterPage() {
@@ -241,10 +241,10 @@ export default function RegisterPage() {
               </div>
               <div className="grid gap-2">
                 <Label>Cargos funcionais *</Label>
-                <p className="text-sm text-muted-foreground mb-3">Selecione todos os cargos que se aplicam a você:</p>
-                <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Selecione seus vínculos com a UPE:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-4 bg-gray-50/50">
                   {FUNCTIONAL_ROLES.map((role) => (
-                    <div key={role.id} className="flex items-center space-x-2">
+                    <div key={role.id} className="flex items-start space-x-2">
                       <Checkbox
                         id={role.id}
                         checked={formData.functionalRoles.includes(role.id)}
@@ -255,13 +255,19 @@ export default function RegisterPage() {
                             setFormData({ ...formData, functionalRoles: formData.functionalRoles.filter((r) => r !== role.id) })
                           }
                         }}
+                        className="mt-0.5"
                       />
-                      <Label htmlFor={role.id} className="text-sm font-normal">
+                      <Label htmlFor={role.id} className="text-sm leading-5 cursor-pointer">
                         {role.label}
                       </Label>
                     </div>
                   ))}
                 </div>
+                {formData.functionalRoles.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {formData.functionalRoles.length} cargo{formData.functionalRoles.length > 1 ? 's' : ''} selecionado{formData.functionalRoles.length > 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Senha</Label>
