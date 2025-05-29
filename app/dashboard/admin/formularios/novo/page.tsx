@@ -1244,7 +1244,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             <div key={index} className="flex gap-2">
                               <Input
                                 value={row}
-                                onChange={(e) => handleQuestionChange(currentQuestion, "rows", [...(currentQuestion.rows || []), e.target.value])}
+                                onChange={(e) => updateRow(index, e.target.value)}
                                 placeholder={`Linha ${index + 1}`}
                               />
                               <Button
@@ -1252,7 +1252,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 text-muted-foreground hover:text-red-500"
-                                onClick={() => handleQuestionChange(currentQuestion, "rows", currentQuestion.rows?.filter((_, i) => i !== index))}
+                                onClick={() => removeRow(index)}
                                 disabled={(currentQuestion.rows?.length || 0) <= 2}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1265,7 +1265,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             variant="outline"
                             size="sm"
                             className="mt-2 w-full"
-                            onClick={() => handleQuestionChange(currentQuestion, "rows", [...(currentQuestion.rows || []), ""])}
+                            onClick={addRow}
                             disabled={(currentQuestion.rows?.length || 0) >= 10}
                           >
                             <Plus className="mr-2 h-4 w-4" />
@@ -1281,7 +1281,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             <div key={index} className="flex gap-2">
                               <Input
                                 value={column}
-                                onChange={(e) => handleQuestionChange(currentQuestion, "columns", [...(currentQuestion.columns || []), e.target.value])}
+                                onChange={(e) => updateColumn(index, e.target.value)}
                                 placeholder={`Coluna ${index + 1}`}
                               />
                               <Button
@@ -1289,7 +1289,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0 text-muted-foreground hover:text-red-500"
-                                onClick={() => handleQuestionChange(currentQuestion, "columns", currentQuestion.columns?.filter((_, i) => i !== index))}
+                                onClick={() => removeColumn(index)}
                                 disabled={(currentQuestion.columns?.length || 0) <= 2}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1302,7 +1302,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             variant="outline"
                             size="sm"
                             className="mt-2 w-full"
-                            onClick={() => handleQuestionChange(currentQuestion, "columns", [...(currentQuestion.columns || []), ""])}
+                            onClick={addColumn}
                             disabled={(currentQuestion.columns?.length || 0) >= 10}
                           >
                             <Plus className="mr-2 h-4 w-4" />
