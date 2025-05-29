@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useSession, signOut } from "next-auth/react"
 import { routes } from "@/lib/routes"
-import { getApiUrl } from "@/lib/api-utils"
+import { getApiUrl, getImageUrl } from "@/lib/api-utils"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -83,8 +83,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="fixed h-screen w-64 flex flex-col border-r bg-white overflow-hidden">
           <div className="flex h-16 items-center border-b px-4 flex-shrink-0 justify-center">
             <Link href={routes.dashboard.home} className="flex items-center gap-8">
-              <Image src="/upe-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
-              <Image src="/cpa-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
+              <Image src={getImageUrl("/upe-logo.png")} alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
+              <Image src={getImageUrl("/cpa-logo.png")} alt="Logo CPA" width={80} height={32} className="h-8 w-auto" />
             </Link>
           </div>
 
@@ -140,7 +140,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="border-t p-4 flex-shrink-0">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={session?.user?.avatar || "/placeholder.svg"} alt="Avatar" />
+                <AvatarImage src={getImageUrl("/placeholder.svg")} alt="Avatar" />
                 <AvatarFallback className="bg-upe-blue text-white">
                   {session?.user?.name
                     ?.split(" ")
@@ -168,7 +168,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer text-red-600"
-                    onClick={() => signOut({ callbackUrl: routes.auth.login })}
+                    onClick={() => signOut({ callbackUrl: routes.home })}
                   >
                     Sair
                   </DropdownMenuItem>
@@ -193,7 +193,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <SheetContent side="left" className="w-64 p-0">
               <div className="flex h-16 items-center border-b px-4">
                 <Link href={routes.dashboard.home} className="flex items-center gap-2">
-                  <Image src="/upe-logo.png" alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
+                  <Image src={getImageUrl("/upe-logo.png")} alt="Logo UPE" width={80} height={32} className="h-8 w-auto" />
                   <span className="text-lg font-medium">CPA</span>
                 </Link>
                 <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setIsMobileMenuOpen(false)}>
@@ -252,7 +252,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="absolute bottom-4 left-4 right-4 border-t pt-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={session?.user?.avatar || "/placeholder.svg"} alt="Avatar" />
+                    <AvatarImage src={getImageUrl("/placeholder.svg")} alt="Avatar" />
                     <AvatarFallback className="bg-upe-blue text-white">
                       {session?.user?.name
                         ?.split(" ")
@@ -273,7 +273,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </Sheet>
 
           <div className="flex items-center gap-2 ml-4">
-            <Image src="/upe-logo.png" alt="Logo UPE" width={60} height={24} className="h-6 w-auto" />
+            <Image src={getImageUrl("/upe-logo.png")} alt="Logo UPE" width={60} height={24} className="h-6 w-auto" />
           </div>
 
           <div className="ml-auto flex items-center gap-2">
@@ -296,7 +296,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </DropdownMenu>
 
             <Avatar className="h-8 w-8">
-              <AvatarImage src={session?.user?.avatar || "/placeholder.svg"} alt="Avatar" />
+              <AvatarImage src={getImageUrl("/placeholder.svg")} alt="Avatar" />
               <AvatarFallback className="bg-upe-blue text-white">
                 {session?.user?.name
                   ?.split(" ")

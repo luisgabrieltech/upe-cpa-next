@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { routes } from "@/lib/routes"
+import { getImageUrl } from "@/lib/api-utils"
 
 export function HeroSection() {
   const [mounted, setMounted] = useState(false)
@@ -26,7 +27,7 @@ export function HeroSection() {
         className="flex justify-center"
       >
         <div className="relative h-24 w-auto md:h-32">
-          <Image src="/upe-logo.png" alt="Logo da UPE" width={200} height={80} className="object-contain" priority />
+          <Image src={getImageUrl("/upe-logo.png")} alt="Logo da UPE" width={200} height={80} className="object-contain" priority />
         </div>
       </motion.div>
       <motion.h1

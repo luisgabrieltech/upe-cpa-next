@@ -142,7 +142,7 @@ export default function DashboardPage() {
                               <span>Tempo estimado: {form.estimatedTime || "-"} min</span>
                             </div>
                             <Button size="sm" className="bg-upe-red hover:bg-upe-red/90 text-white" asChild>
-                              <Link href={`/dashboard/avaliacoes/responder/${form.id}`}>Responder</Link>
+                              <Link href={routes.dashboard.evaluations.respond(form.id)}>Responder</Link>
                             </Button>
                           </div>
                         </div>

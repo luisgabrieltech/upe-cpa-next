@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { routes } from "@/lib/routes"
+import { getImageUrl } from "@/lib/api-utils"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -15,7 +16,7 @@ export function Navbar() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href={routes.home} className="flex items-center space-x-2">
-            <Image src="/upe-logo.png" alt="Logo UPE" width={100} height={40} className="h-10 w-auto" />
+            <Image src={getImageUrl("/upe-logo.png")} alt="Logo UPE" width={100} height={40} className="h-10 w-auto" />
           </Link>
         </div>
         <nav className="hidden md:flex gap-6">

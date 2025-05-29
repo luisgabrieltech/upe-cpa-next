@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, Mail, School, Building, Bell, Shield, Lock, Upload } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { getApiUrl } from "@/lib/api-utils"
+import { getApiUrl, getImageUrl } from "@/lib/api-utils"
 
 export default function ConfiguracoesPage() {
   const { data: session } = useSession()
@@ -136,7 +136,7 @@ export default function ConfiguracoesPage() {
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="flex flex-col items-center space-y-2">
                       <Avatar className="h-24 w-24">
-                        <AvatarImage src="/avatar.png" alt="Avatar" />
+                        <AvatarImage src={getImageUrl("/avatar.png")} alt="Avatar" />
                         <AvatarFallback className="bg-upe-blue text-white text-xl">
                           {userData.name?.charAt(0) || "U"}
                         </AvatarFallback>

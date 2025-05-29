@@ -263,13 +263,13 @@ export default function AdminFormulariosPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <a href={`/dashboard/admin/formularios/preview/${form.id}`} target="_blank" rel="noopener noreferrer">
+                <a href={`${routes.dashboard.admin.forms.home}/preview/${form.id}`} target="_blank" rel="noopener noreferrer">
                   <Eye className="mr-2 h-4 w-4" />
                   <span>Visualizar</span>
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={`/dashboard/admin/formularios/novo/${form.id}`}>
+                <Link href={`${routes.dashboard.admin.forms.new}/${form.id}`}>
                   <Edit className="mr-2 h-4 w-4" />
                   <span>Editar</span>
                 </Link>
@@ -503,13 +503,13 @@ export default function AdminFormulariosPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild>
-                                    <a href={`/dashboard/admin/formularios/preview/${form.id}`} target="_blank" rel="noopener noreferrer">
+                                    <a href={`${routes.dashboard.admin.forms.home}/preview/${form.id}`} target="_blank" rel="noopener noreferrer">
                                       <Eye className="mr-2 h-4 w-4" />
                                       <span>Visualizar</span>
                                     </a>
                                   </DropdownMenuItem>
                                   <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard/admin/formularios/novo/${form.id}`}>
+                                    <Link href={`${routes.dashboard.admin.forms.new}/${form.id}`}>
                                       <Edit className="mr-2 h-4 w-4" />
                                       <span>Editar</span>
                                     </Link>

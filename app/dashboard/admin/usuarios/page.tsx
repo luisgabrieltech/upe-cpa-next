@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getApiUrl } from "@/lib/api-utils"
+import { getApiUrl, getImageUrl } from "@/lib/api-utils"
 
 export default function AdminUsuariosPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -346,7 +346,7 @@ export default function AdminUsuariosPage() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="h-8 w-8">
-                                <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                                <AvatarImage src={getImageUrl("/placeholder.svg")} alt={user.name} />
                                 <AvatarFallback className="bg-upe-blue text-white">
                                   {user.name
                                     .split(" ")

@@ -20,4 +20,15 @@ export function getAuthApiUrl(path: string): string {
   // Remove barra inicial se existir
   const cleanPath = path.startsWith('/') ? path.slice(1) : path
   return `${basePath}/api/auth/${cleanPath}`
+}
+
+/**
+ * Gera URL de imagem com o basePath correto
+ * @param path - Caminho da imagem (ex: '/upe-logo.png', 'avatar.png')
+ * @returns URL completa da imagem (ex: '/sistemacpa/upe-logo.png')
+ */
+export function getImageUrl(path: string): string {
+  // Remove barra inicial se existir
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path
+  return `${basePath}/${cleanPath}`
 } 

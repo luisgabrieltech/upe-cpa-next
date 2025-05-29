@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react"
 import { routes } from "@/lib/routes"
+import { getImageUrl } from "@/lib/api-utils"
 
 export function Footer() {
   return (
@@ -10,7 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
             <Link href={routes.home} className="flex items-center space-x-2">
-              <Image src="/logo.png" alt="Logo" width={40} height={40} />
+              <Image src={getImageUrl("/upe-logo.png")} alt="Logo UPE" width={40} height={40} />
               <span className="font-bold text-xl">CPA UPE</span>
             </Link>
             <p className="text-sm text-white/80">Comissão Própria de Avaliação da Universidade de Pernambuco</p>

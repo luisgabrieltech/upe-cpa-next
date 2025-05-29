@@ -10,6 +10,7 @@ import { Clock, FileText, Search } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { getApiUrl } from "@/lib/api-utils"
+import { routes } from "@/lib/routes"
 
 export default function AvaliacoesPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -121,7 +122,7 @@ export default function AvaliacoesPage() {
                         </div>
                         {form.externalStatus === "AVAILABLE" ? (
                           <Button className="bg-upe-blue hover:bg-upe-blue/90 text-white" asChild>
-                            <Link href={`/dashboard/avaliacoes/responder/${form.id}`}>
+                            <Link href={routes.dashboard.evaluations.respond(form.id)}>
                               Responder
                             </Link>
                           </Button>
