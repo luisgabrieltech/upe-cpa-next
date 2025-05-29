@@ -306,12 +306,9 @@ export default function AdminUsuariosPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os cargos</SelectItem>
-                    <SelectItem value="admin">Administradores</SelectItem>
-                    <SelectItem value="coordenador">Coordenadores</SelectItem>
-                    <SelectItem value="cpa">Membros da CPA</SelectItem>
-                    <SelectItem value="professor">Professores</SelectItem>
-                    <SelectItem value="aluno">Alunos</SelectItem>
-                    <SelectItem value="tecnico">Técnicos</SelectItem>
+                    <SelectItem value="ADMIN">Administradores</SelectItem>
+                    <SelectItem value="CSA">CSA</SelectItem>
+                    <SelectItem value="USER">Usuários</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -335,6 +332,7 @@ export default function AdminUsuariosPage() {
                       <TableHead>Usuário</TableHead>
                       <TableHead>E-mail</TableHead>
                       <TableHead>Cargo</TableHead>
+                      <TableHead>Cargos Funcionais</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -361,6 +359,9 @@ export default function AdminUsuariosPage() {
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <RoleBadge role={user.role} />
+                          </TableCell>
+                          <TableCell>
+                            <FunctionalRolesBadges user={user} />
                           </TableCell>
                           <TableCell>
                             {user.active ? (
@@ -421,7 +422,7 @@ export default function AdminUsuariosPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={6} className="h-24 text-center">
                           <div className="flex flex-col items-center justify-center text-muted-foreground">
                             <User className="h-8 w-8 mb-2" />
                             <p>Nenhum usuário encontrado</p>
@@ -603,6 +604,7 @@ export default function AdminUsuariosPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">Administrador</SelectItem>
+                  <SelectItem value="CSA">CSA (Comissão Setorial de Avaliação)</SelectItem>
                   <SelectItem value="USER">Usuário</SelectItem>
                 </SelectContent>
               </Select>
@@ -625,19 +627,40 @@ export default function AdminUsuariosPage() {
 
 function RoleBadge({ role }: { role: string }) {
   switch (role) {
-    case "admin":
+    case "ADMIN":
       return <Badge className="bg-upe-red hover:bg-upe-red/90">Administrador</Badge>
-    case "coordenador":
-      return <Badge className="bg-purple-500 hover:bg-purple-600">Coordenador</Badge>
-    case "cpa":
-      return <Badge className="bg-upe-blue hover:bg-upe-blue/90">CPA</Badge>
-    case "professor":
-      return <Badge className="bg-green-500 hover:bg-green-600">Professor</Badge>
-    case "aluno":
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600">Aluno</Badge>
-    case "tecnico":
-      return <Badge className="bg-gray-500 hover:bg-gray-600">Técnico</Badge>
+    case "CSA":
+      return <Badge className="bg-purple-500 hover:bg-purple-600">CSA</Badge>
+    case "USER":
+      return <Badge variant="outline">Usuário</Badge>
     default:
       return <Badge variant="outline">{role}</Badge>
   }
+}
+
+function FunctionalRolesBadges({ user }: { user: any }) {
+  if (!user.extraData || !user.extraData.functionalRoles) {
+    return <span className="text-muted-foreground text-sm">Não informado</span>;
+  }
+
+  const getFunctionalRoleLabel = (role: string) => {
+    switch (role) {
+      case "DOCENTE": return "Docente";
+      case "DISCENTE": return "Discente";
+      case "EGRESSO": return "Egresso";
+      case "TECNICO_UNIDADES_ENSINO": return "Téc. Unidades";
+      case "TECNICO_COMPLEXO_HOSPITALAR": return "Téc. Hospital";
+      default: return role;
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {user.extraData.functionalRoles.map((role: string) => (
+        <Badge key={role} variant="secondary" className="text-xs">
+          {getFunctionalRoleLabel(role)}
+        </Badge>
+      ))}
+    </div>
+  );
 }
