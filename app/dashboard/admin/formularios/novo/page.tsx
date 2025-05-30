@@ -130,17 +130,26 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     if (dependentValue === undefined) return false;
     
     const checkCondition = (condition: {type: "equals" | "contains", value: string}): boolean => {
-      if (condition.type === "equals") {
-        if (Array.isArray(dependentValue)) {
-          return dependentValue.map(String).includes(condition.value);
+      const normalizedValue = String(condition.value).trim().toLowerCase();
+      
+      if (Array.isArray(dependentValue)) {
+        const normalizedArray = dependentValue.map(v => String(v).trim().toLowerCase());
+        
+        if (condition.type === "equals") {
+          return normalizedArray.includes(normalizedValue);
+        } else if (condition.type === "contains") {
+          return normalizedArray.some(v => v.includes(normalizedValue));
         }
-        return String(dependentValue) === condition.value;
-      } else if (condition.type === "contains") {
-        if (Array.isArray(dependentValue)) {
-          return dependentValue.map(String).some(v => v.includes(condition.value));
+      } else {
+        const normalizedDepValue = String(dependentValue).trim().toLowerCase();
+        
+        if (condition.type === "equals") {
+          return normalizedDepValue === normalizedValue;
+        } else if (condition.type === "contains") {
+          return normalizedDepValue.includes(normalizedValue);
         }
-        return String(dependentValue).includes(condition.value);
       }
+      
       return false;
     };
     
@@ -152,10 +161,31 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   };
   
   const updateResponse = (questionId: string, value: any) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: value
-    }));
+    setResponses((prev: Record<string, any>) => {
+      const newResponses = { ...prev };
+      
+      // Se o valor for undefined ou null, remove a resposta
+      if (value === undefined || value === null) {
+        delete newResponses[questionId];
+        return newResponses;
+      }
+      
+      // Normaliza o valor antes de salvar
+      if (Array.isArray(value)) {
+        newResponses[questionId] = value.filter(v => v !== null && v !== undefined);
+      } else {
+        newResponses[questionId] = value;
+      }
+      
+      // Limpa respostas de questões que dependem desta
+      formData.questions.forEach((question: Question) => {
+        if (question.conditional?.dependsOn === questionId) {
+          delete newResponses[question.id];
+        }
+      });
+      
+      return newResponses;
+    });
   };
 
   const moveQuestionUp = (index: number) => {
@@ -368,25 +398,59 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     }
   };
   
-  const updateCondition = (index: number, field: "type" | "value", value: string) => {
-    if (currentQuestion.conditional) {
-      const newConditions = [...currentQuestion.conditional.conditions];
-      newConditions[index] = {
-        ...newConditions[index],
-        [field]: field === "type" 
-          ? (value as "equals" | "contains") 
-          : value
-      };
-      
-      setCurrentQuestion({
-        ...currentQuestion,
+  const handleConditionChange = (q: Question, index: number, field: "type" | "value" | "dependsOn", value: string) => {
+    if (!q.conditional) return;
+    
+    if (field === "dependsOn") {
+      setCurrentQuestion((prev: Question) => ({
+        ...prev,
         conditional: {
-          ...currentQuestion.conditional,
-          conditions: newConditions
+          ...prev.conditional!,
+          dependsOn: value,
+          // Reset conditions when changing dependent question
+          conditions: [{ type: "equals", value: "" }]
         }
-      });
+      }));
+      return;
     }
+
+    const newConditions = [...q.conditional.conditions];
+    newConditions[index] = {
+      ...newConditions[index],
+      [field]: value
+    };
+    
+    setCurrentQuestion((prev: Question) => ({
+      ...prev,
+      conditional: {
+        ...prev.conditional!,
+        conditions: newConditions
+      }
+    }));
   };
+
+  const handleConditionOperatorChange = (q: Question, condition: { questionId: string; operator: string; value: string }, idx: number, value: string) => {
+    if (!q.conditional) return
+    const newConditions = [...q.conditional.conditions]
+    newConditions[idx] = {
+      ...condition,
+      operator: value
+    }
+    setCurrentQuestion(prev => ({
+      ...prev,
+      conditional: {
+        ...prev.conditional!,
+        conditions: newConditions
+      }
+    }))
+  }
+
+  const handleOptionDelete = (option: string) => {
+    setCurrentQuestion(prev => ({
+      ...prev,
+      options: prev.options.filter(o => o !== option)
+    }))
+  }
 
   const saveForm = async () => {
     try {
@@ -689,49 +753,6 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     setCurrentQuestion(prev => ({
       ...prev,
       options: newOptions
-    }))
-  }
-
-  const handleConditionChange = (q: Question, index: number, field: "type" | "value", value: string) => {
-    if (!q.conditional) return
-    const newConditions = [...q.conditional.conditions]
-    newConditions[index] = {
-      ...newConditions[index],
-      [field]: value
-    }
-    setCurrentQuestion(prev => ({
-      ...prev,
-      conditional: {
-        ...prev.conditional!,
-        conditions: newConditions
-      }
-    }))
-  }
-
-  const renderQuestion = (question: Question, index: number) => {
-    // ... existing code ...
-  }
-
-  const handleConditionOperatorChange = (q: Question, condition: { questionId: string; operator: string; value: string }, idx: number, value: string) => {
-    if (!q.conditional) return
-    const newConditions = [...q.conditional.conditions]
-    newConditions[idx] = {
-      ...condition,
-      operator: value
-    }
-    setCurrentQuestion(prev => ({
-      ...prev,
-      conditional: {
-        ...prev.conditional!,
-        conditions: newConditions
-      }
-    }))
-  }
-
-  const handleOptionDelete = (option: string) => {
-    setCurrentQuestion(prev => ({
-      ...prev,
-      options: prev.options.filter(o => o !== option)
     }))
   }
 
