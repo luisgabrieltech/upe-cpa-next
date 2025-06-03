@@ -400,17 +400,15 @@ export default function ConfiguracoesPage() {
                         </Button>
                       </>
                     ) : (
-                      <Button
-                        onClick={() => {
-                          if (status === "authenticated" && session?.user) {
-                            setIsEditing(true)
-                          }
-                        }}
-                        className="bg-upe-blue hover:bg-upe-blue/90 text-white"
-                        disabled={status !== "authenticated" || !session?.user}
-                      >
-                        Editar perfil
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground">Edição temporariamente indisponível</p>
+                        <Button
+                          className="bg-upe-blue/50 hover:bg-upe-blue/50 text-white cursor-not-allowed"
+                          disabled={true}
+                        >
+                          Editar perfil
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </form>
