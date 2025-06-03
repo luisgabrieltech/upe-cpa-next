@@ -55,9 +55,9 @@ export default function DashboardPage() {
 
         <Alert className="mb-6 border-upe-blue/20 bg-upe-blue/5">
           <Info className="h-4 w-4 text-upe-blue" />
-          <AlertTitle className="text-upe-blue">Aviso importante</AlertTitle>
+          <AlertTitle className="text-upe-blue">Bem-vindo ao novo Sistema CPA</AlertTitle>
           <AlertDescription>
-            O período de avaliação institucional está aberto. Sua participação é fundamental!
+            O sistema está em fase de implementação. Em breve iniciaremos um novo ciclo de avaliações.
           </AlertDescription>
         </Alert>
 
@@ -221,61 +221,61 @@ export default function DashboardPage() {
 
 const recentForms = [
   {
-    title: "Avaliação Institucional 2023.2",
-    description: "Avaliação geral da instituição para o semestre 2023.2",
-    deadline: "30/06/2023",
+    title: "Avaliação Institucional 2025.1",
+    description: "Avaliação geral da instituição para o semestre 2025.1",
+    deadline: "Em breve",
     estimatedTime: "15 minutos",
   },
   {
     title: "Avaliação de Infraestrutura",
     description: "Avaliação das instalações físicas e recursos tecnológicos",
-    deadline: "15/06/2023",
+    deadline: "Em breve",
     estimatedTime: "10 minutos",
   },
 ]
 
 const messages = [
   {
-    title: "Novo ciclo de avaliação",
+    title: "Bem-vindo ao novo Sistema CPA",
     content:
-      "O novo ciclo de avaliação institucional começou. Sua participação é fundamental para a melhoria contínua da nossa universidade.",
-    date: "01/05/2023",
+      "O novo sistema da CPA está no ar! Agora você pode participar das avaliações de forma mais simples e intuitiva.",
+    date: "2025",
     link: {
       text: "Saiba mais",
       url: "#",
     },
   },
   {
-    title: "Resultados da última avaliação",
-    content: "Os resultados da avaliação do semestre 2022.2 já estão disponíveis para consulta na área de relatórios.",
-    date: "20/04/2023",
+    title: "Próximo Ciclo de Avaliação",
+    content: "Fique atento! Em breve iniciaremos um novo ciclo de avaliação institucional.",
+    date: "2025",
     link: {
-      text: "Ver resultados",
+      text: "Ver calendário",
       url: "#",
     },
   },
   {
-    title: "Melhorias implementadas",
+    title: "Importância da sua Participação",
     content:
-      "Com base nas avaliações anteriores, diversas melhorias foram implementadas nos laboratórios e bibliotecas.",
-    date: "15/04/2023",
+      "Sua opinião é fundamental para a melhoria contínua da nossa universidade. Participe quando as avaliações estiverem disponíveis.",
+    date: "2025",
   },
 ]
 
 const calendarEvents = [
   {
-    title: "Período de Avaliação Institucional",
-    date: "01/05/2023 a 30/06/2023",
-    description: "Período para preenchimento dos formulários de avaliação institucional.",
+    title: "Preparação do Ciclo Avaliativo",
+    date: "2025",
+    description: "Período de organização e planejamento das avaliações do próximo ciclo.",
+  },
+  {
+    title: "Próximo Período de Avaliação",
+    date: "A definir",
+    description: "As datas do próximo ciclo de avaliação serão divulgadas em breve.",
   },
   {
     title: "Divulgação dos Resultados",
-    date: "15/07/2023",
-    description: "Publicação dos resultados consolidados da avaliação institucional.",
-  },
-  {
-    title: "Apresentação do Plano de Melhorias",
-    date: "01/08/2023",
-    description: "Apresentação das ações de melhoria baseadas nos resultados da avaliação.",
+    date: "Após conclusão do ciclo",
+    description: "Os resultados serão publicados após a finalização do período avaliativo.",
   },
 ]
