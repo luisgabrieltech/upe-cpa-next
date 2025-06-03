@@ -17,14 +17,10 @@ import { useToast } from "@/components/ui/use-toast"
 import { getApiUrl, getImageUrl } from "@/lib/api-utils"
 
 export default function ConfiguracoesPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-
-  console.log('Render - isEditing:', isEditing)
-  console.log('Render - session:', session?.user?.email)
-
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -50,16 +46,11 @@ export default function ConfiguracoesPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    console.log('useEffect triggered - session email:', session?.user?.email)
-    console.log('useEffect triggered - userData:', userData)
-    
     const fetchUserData = async () => {
-      console.log('Fetching user data...')
       try {
         const response = await fetch(getApiUrl('user/profile'))
         if (response.ok) {
           const data = await response.json()
-          console.log('Fetched data:', data)
           setUserData({
             name: data.name || "",
             email: data.email || "",
@@ -81,11 +72,10 @@ export default function ConfiguracoesPage() {
       }
     }
 
-    if (session?.user && !userData.name) {
-      console.log('Conditions met, calling fetchUserData')
+    if (session?.user?.email && status === "authenticated") {
       fetchUserData()
     }
-  }, [session?.user?.email])
+  }, [session?.user?.email, status])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -199,6 +189,30 @@ export default function ConfiguracoesPage() {
     } finally {
       setIsChangingPassword(false)
     }
+  }
+
+  if (status === "loading") {
+    return (
+      <DashboardLayout>
+        <div className="w-full p-4 md:p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!session?.user) {
+    return (
+      <DashboardLayout>
+        <div className="w-full p-4 md:p-6">
+          <div className="text-center">
+            <p className="text-red-500">Sessão expirada. Por favor, faça login novamente.</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -388,11 +402,12 @@ export default function ConfiguracoesPage() {
                     ) : (
                       <Button
                         onClick={() => {
-                          console.log('Edit button clicked - current isEditing:', isEditing)
-                          setIsEditing(true)
-                          console.log('Edit button clicked - after setState:', true)
+                          if (status === "authenticated" && session?.user) {
+                            setIsEditing(true)
+                          }
                         }}
                         className="bg-upe-blue hover:bg-upe-blue/90 text-white"
+                        disabled={status !== "authenticated" || !session?.user}
                       >
                         Editar perfil
                       </Button>
