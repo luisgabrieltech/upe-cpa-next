@@ -22,8 +22,8 @@ export default function ConfiguracoesPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const [userData, setUserData] = useState({
-    name: session?.user?.name || "",
-    email: session?.user?.email || "",
+    name: "",
+    email: "",
     extraData: {
       course: "",
       campus: "",
@@ -51,17 +51,16 @@ export default function ConfiguracoesPage() {
         const response = await fetch(getApiUrl('user/profile'))
         if (response.ok) {
           const data = await response.json()
-          setUserData((prev) => ({
-            ...prev,
-            name: data.name,
-            email: data.email,
+          setUserData({
+            name: data.name || "",
+            email: data.email || "",
             extraData: data.extraData || {
               course: "",
               campus: "",
               registration: "",
               phone: "",
             },
-          }))
+          })
         }
       } catch (error) {
         console.error("Erro ao buscar dados do usuário:", error)
@@ -73,10 +72,10 @@ export default function ConfiguracoesPage() {
       }
     }
 
-    if (session?.user) {
+    if (session?.user && !userData.name) {
       fetchUserData()
     }
-  }, [session])
+  }, [session?.user?.email])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
