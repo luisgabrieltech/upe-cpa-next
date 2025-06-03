@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Mail, School, Building, Bell, Shield, Lock, Upload } from "lucide-react"
+import { User, Mail, School, Building, Bell, Shield, Lock, Upload, Eye, EyeOff } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { getApiUrl, getImageUrl } from "@/lib/api-utils"
 
@@ -31,6 +31,13 @@ export default function ConfiguracoesPage() {
       phone: "",
     },
   })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -102,6 +109,77 @@ export default function ConfiguracoesPage() {
     }
   }
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validações
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "Todos os campos são obrigatórios",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "A nova senha e a confirmação não coincidem",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newPassword.length < 8) {
+      toast({
+        title: "Erro",
+        description: "A nova senha deve ter pelo menos 8 caracteres",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsChangingPassword(true)
+
+    try {
+      const response = await fetch(getApiUrl('user/password'), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: "Sucesso",
+          description: "Senha atualizada com sucesso",
+        })
+        // Limpar campos
+        setCurrentPassword("")
+        setNewPassword("")
+        setConfirmPassword("")
+      } else {
+        throw new Error(data.message || "Erro ao atualizar senha")
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error)
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar a senha",
+        variant: "destructive",
+      })
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="w-full p-4 md:p-6">
@@ -125,7 +203,6 @@ export default function ConfiguracoesPage() {
             <TabsTrigger 
               value="security" 
               className="data-[state=active]:bg-upe-blue data-[state=active]:text-white"
-              disabled
             >
               Segurança
             </TabsTrigger>
@@ -313,9 +390,102 @@ export default function ConfiguracoesPage() {
 
           <TabsContent value="security">
             <Card>
-              <CardContent className="p-6">
-                <div className="text-center text-muted-foreground py-8">
-                  Funcionalidade em desenvolvimento...
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Segurança da Conta
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium">Alterar Senha</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Altere sua senha para manter sua conta segura
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password">Senha Atual</Label>
+                        <div className="relative">
+                          <Input
+                            id="current-password"
+                            type={showCurrentPassword ? "text" : "password"}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Digite sua senha atual"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          >
+                            {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">Nova Senha</Label>
+                        <div className="relative">
+                          <Input
+                            id="new-password"
+                            type={showNewPassword ? "text" : "password"}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Digite sua nova senha"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirm-password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Confirme sua nova senha"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button 
+                        type="submit"
+                        className="bg-upe-blue hover:bg-upe-blue/90 text-white"
+                        disabled={isChangingPassword}
+                      >
+                        {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+                      </Button>
+                    </div>
+                  </form>
                 </div>
               </CardContent>
             </Card>
