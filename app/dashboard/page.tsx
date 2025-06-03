@@ -37,9 +37,9 @@ export default function DashboardPage() {
   // IDs dos formulários já respondidos
   const respondedFormIds = new Set(responses.map((r: any) => r.formId))
   // Pendentes: disponíveis e não respondidos
-  const pendingForms = forms.filter((f: any) => !respondedFormIds.has(f.id))
+  const pendingForms = forms.filter((f: any) => f.externalStatus !== "HIDDEN" && !respondedFormIds.has(f.id))
   // Concluídas: disponíveis e respondidas
-  const completedForms = forms.filter((f: any) => respondedFormIds.has(f.id))
+  const completedForms = forms.filter((f: any) => f.externalStatus !== "HIDDEN" && respondedFormIds.has(f.id))
 
   return (
     <DashboardLayout>
