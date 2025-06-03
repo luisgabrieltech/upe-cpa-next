@@ -38,6 +38,12 @@ export default function ConfiguracoesPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [errors, setErrors] = useState<{
+    currentPassword?: string;
+    newPassword?: string;
+    confirmPassword?: string;
+  }>({})
+  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -109,34 +115,34 @@ export default function ConfiguracoesPage() {
     }
   }
 
+  const validatePasswords = () => {
+    const newErrors: typeof errors = {}
+
+    if (!currentPassword) {
+      newErrors.currentPassword = "A senha atual é obrigatória"
+    }
+
+    if (!newPassword) {
+      newErrors.newPassword = "A nova senha é obrigatória"
+    } else if (newPassword.length < 8) {
+      newErrors.newPassword = "A senha deve ter pelo menos 8 caracteres"
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "A confirmação de senha é obrigatória"
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "As senhas não coincidem"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Validações
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "Todos os campos são obrigatórios",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "A nova senha e a confirmação não coincidem",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (newPassword.length < 8) {
-      toast({
-        title: "Erro",
-        description: "A nova senha deve ter pelo menos 8 caracteres",
-        variant: "destructive",
-      })
+    setSuccess(false)
+    
+    if (!validatePasswords()) {
       return
     }
 
@@ -157,6 +163,8 @@ export default function ConfiguracoesPage() {
       const data = await response.json()
 
       if (response.ok) {
+        setSuccess(true)
+        setErrors({})
         toast({
           title: "Sucesso",
           description: "Senha atualizada com sucesso",
@@ -166,7 +174,11 @@ export default function ConfiguracoesPage() {
         setNewPassword("")
         setConfirmPassword("")
       } else {
-        throw new Error(data.message || "Erro ao atualizar senha")
+        if (data.message === "Senha atual incorreta") {
+          setErrors({ currentPassword: "Senha atual incorreta" })
+        } else {
+          throw new Error(data.message || "Erro ao atualizar senha")
+        }
       }
     } catch (error) {
       console.error("Erro ao atualizar senha:", error)
@@ -416,8 +428,13 @@ export default function ConfiguracoesPage() {
                             id="current-password"
                             type={showCurrentPassword ? "text" : "password"}
                             value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            onChange={(e) => {
+                              setCurrentPassword(e.target.value)
+                              setErrors(prev => ({ ...prev, currentPassword: undefined }))
+                              setSuccess(false)
+                            }}
                             placeholder="Digite sua senha atual"
+                            className={errors.currentPassword ? "border-red-500" : ""}
                           />
                           <Button
                             type="button"
@@ -429,6 +446,9 @@ export default function ConfiguracoesPage() {
                             {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
                         </div>
+                        {errors.currentPassword && (
+                          <p className="text-sm text-red-500 mt-1">{errors.currentPassword}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -438,8 +458,13 @@ export default function ConfiguracoesPage() {
                             id="new-password"
                             type={showNewPassword ? "text" : "password"}
                             value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
+                            onChange={(e) => {
+                              setNewPassword(e.target.value)
+                              setErrors(prev => ({ ...prev, newPassword: undefined, confirmPassword: undefined }))
+                              setSuccess(false)
+                            }}
                             placeholder="Digite sua nova senha"
+                            className={errors.newPassword ? "border-red-500" : ""}
                           />
                           <Button
                             type="button"
@@ -451,6 +476,9 @@ export default function ConfiguracoesPage() {
                             {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
                         </div>
+                        {errors.newPassword && (
+                          <p className="text-sm text-red-500 mt-1">{errors.newPassword}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -460,8 +488,13 @@ export default function ConfiguracoesPage() {
                             id="confirm-password"
                             type={showConfirmPassword ? "text" : "password"}
                             value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            onChange={(e) => {
+                              setConfirmPassword(e.target.value)
+                              setErrors(prev => ({ ...prev, confirmPassword: undefined }))
+                              setSuccess(false)
+                            }}
                             placeholder="Confirme sua nova senha"
+                            className={errors.confirmPassword ? "border-red-500" : ""}
                           />
                           <Button
                             type="button"
@@ -473,8 +506,17 @@ export default function ConfiguracoesPage() {
                             {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
                         </div>
+                        {errors.confirmPassword && (
+                          <p className="text-sm text-red-500 mt-1">{errors.confirmPassword}</p>
+                        )}
                       </div>
                     </div>
+
+                    {success && (
+                      <div className="bg-green-50 text-green-600 px-4 py-2 rounded-md text-sm">
+                        Senha alterada com sucesso!
+                      </div>
+                    )}
 
                     <div className="flex justify-end">
                       <Button 
