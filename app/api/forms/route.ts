@@ -35,6 +35,12 @@ export async function POST(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 })
     }
+
+    // Verificar se o usuário tem permissão (ADMIN ou CSA)
+    if (!["ADMIN", "CSA"].includes(session.user.role)) {
+      return NextResponse.json({ message: "Sem permissão para criar formulários" }, { status: 403 })
+    }
+
     const data = await req.json()
     const { id, title, description, category, status, deadline, questions, estimatedTime } = data
 
@@ -113,6 +119,12 @@ export async function PATCH(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 })
     }
+
+    // Verificar se o usuário tem permissão (ADMIN ou CSA)
+    if (!["ADMIN", "CSA"].includes(session.user.role)) {
+      return NextResponse.json({ message: "Sem permissão para atualizar formulários" }, { status: 403 })
+    }
+
     const { searchParams } = new URL(req.url)
     const action = searchParams.get("action")
     const data = await req.json()
@@ -156,6 +168,12 @@ export async function DELETE(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 })
     }
+
+    // Verificar se o usuário tem permissão (ADMIN ou CSA)
+    if (!["ADMIN", "CSA"].includes(session.user.role)) {
+      return NextResponse.json({ message: "Sem permissão para excluir formulários" }, { status: 403 })
+    }
+
     const { id } = await req.json()
     console.log("Tentando excluir formulário com id:", id)
     // Deletar respostas associadas ao formulário
