@@ -21,6 +21,10 @@ export default function ConfiguracoesPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  console.log('Render - isEditing:', isEditing)
+  console.log('Render - session:', session?.user?.email)
+
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -46,11 +50,16 @@ export default function ConfiguracoesPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
+    console.log('useEffect triggered - session email:', session?.user?.email)
+    console.log('useEffect triggered - userData:', userData)
+    
     const fetchUserData = async () => {
+      console.log('Fetching user data...')
       try {
         const response = await fetch(getApiUrl('user/profile'))
         if (response.ok) {
           const data = await response.json()
+          console.log('Fetched data:', data)
           setUserData({
             name: data.name || "",
             email: data.email || "",
@@ -73,6 +82,7 @@ export default function ConfiguracoesPage() {
     }
 
     if (session?.user && !userData.name) {
+      console.log('Conditions met, calling fetchUserData')
       fetchUserData()
     }
   }, [session?.user?.email])
@@ -377,7 +387,11 @@ export default function ConfiguracoesPage() {
                       </>
                     ) : (
                       <Button
-                        onClick={() => setIsEditing(true)}
+                        onClick={() => {
+                          console.log('Edit button clicked - current isEditing:', isEditing)
+                          setIsEditing(true)
+                          console.log('Edit button clicked - after setState:', true)
+                        }}
                         className="bg-upe-blue hover:bg-upe-blue/90 text-white"
                       >
                         Editar perfil
