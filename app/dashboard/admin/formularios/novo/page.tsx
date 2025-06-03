@@ -831,10 +831,11 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Categoria</Label>
+                    <Label htmlFor="category">Categoria *</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value })}
+                      required
                     >
                       <SelectTrigger id="category">
                         <SelectValue placeholder="Selecione uma categoria" />

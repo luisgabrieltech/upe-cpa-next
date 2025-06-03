@@ -44,6 +44,14 @@ export async function POST(req: Request) {
     const data = await req.json()
     const { id, title, description, category, status, deadline, questions, estimatedTime } = data
 
+    // Validar categoria
+    const validCategories = ["DOCENTES", "DISCENTES", "EGRESSOS", "TECNICOS_UNIDADES", "TECNICOS_COMPLEXO"]
+    if (!category || !validCategories.includes(category)) {
+      return NextResponse.json({ 
+        message: "Categoria inválida. Selecione uma das opções: Docentes, Discentes, Egressos, Técnicos das Unidades ou Técnicos do Complexo" 
+      }, { status: 400 })
+    }
+
     // Se tiver ID, é uma atualização
     if (id) {
       // Primeiro, deletar todas as questões existentes
