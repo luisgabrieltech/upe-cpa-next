@@ -29,6 +29,13 @@ export const routes = {
       view: (id: string) => `${basePath}/dashboard/avaliacoes/${id}`,
     },
     
+    // Certificados
+    certificates: {
+      home: `${basePath}/dashboard/certificados`,
+      download: (id: string) => `${basePath}/dashboard/certificados/${id}/download`,
+      view: (id: string) => `${basePath}/dashboard/certificados/${id}`,
+    },
+    
     // Administração
     admin: {
       home: `${basePath}/dashboard/admin`,
