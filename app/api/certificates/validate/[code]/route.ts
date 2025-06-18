@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
-import { isValidValidationCode } from "@/lib/certificates"
+import { isValidValidationCode } from "@/lib/validation-utils"
 
 export async function GET(
   request: NextRequest,
