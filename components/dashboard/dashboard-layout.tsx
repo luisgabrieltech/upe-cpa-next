@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Bell, FileText, Home, Settings, Menu, X, ShieldCheck, Users, ClipboardList, BarChart3 } from "lucide-react"
+import { Bell, FileText, Home, Settings, Menu, X, ShieldCheck, Users, ClipboardList, BarChart3, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -366,6 +366,11 @@ const navItems = [
     href: routes.dashboard.evaluations.home,
     icon: FileText,
     badge: "2",
+  },
+  {
+    label: "Certificados",
+    href: routes.dashboard.certificates.home,
+    icon: Award,
   },
   {
     label: "Votações",
