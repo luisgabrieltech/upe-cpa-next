@@ -5,7 +5,7 @@ import { Search, CheckCircle2, XCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { isValidValidationCode } from "@/lib/certificates"
+import { isValidValidationCode } from "@/lib/validation-utils"
 import { getApiUrl } from "@/lib/api-utils"
 
 interface ValidationResult {

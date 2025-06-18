@@ -12,6 +12,17 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Não incluir módulos do Node.js no bundle do cliente
+      config.resolve.fallback = {
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
 }
 
 export default nextConfig

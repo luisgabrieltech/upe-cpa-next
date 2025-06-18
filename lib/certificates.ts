@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
-import { CertificateMetadata } from './certificate-service';
+import { CertificateMetadata } from '@/types/certificate';
 
 /**
  * Gera um código de validação único para o certificado
@@ -117,16 +117,6 @@ export async function generateCertificatePDF(data: {
 }
 
 /**
- * Valida o formato do código de validação
- * @param code - Código de validação
- * @returns boolean
- */
-export function isValidValidationCode(code: string): boolean {
-  const pattern = /^UPE-CPA-\d{5}-\d{4}$/;
-  return pattern.test(code);
-}
-
-/**
  * Extrai informações do código de validação
  * @param code - Código de validação
  * @returns object com as partes do código
@@ -135,7 +125,8 @@ export function parseValidationCode(code: string): {
   sequential: string;
   year: string;
 } | null {
-  if (!isValidValidationCode(code)) return null;
+  const pattern = /^UPE-CPA-\d{5}-\d{4}$/;
+  if (!pattern.test(code)) return null;
 
   const parts = code.split('-');
   return {
