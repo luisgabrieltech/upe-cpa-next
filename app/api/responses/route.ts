@@ -2,6 +2,14 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { CertificateService } from "@/lib/certificate-service"
+import { Question } from "@/types/prisma"
+
+interface ResponseData {
+  formId: string;
+  questionId: string;
+  value: string;
+}
 
 export async function POST(req: Request) {
   try {
@@ -22,9 +30,9 @@ export async function POST(req: Request) {
     if (!form) {
       return NextResponse.json({ message: "Formulário não encontrado" }, { status: 404 })
     }
-    const obrigatorias = form.questions.filter(q => q.required).map(q => q.id)
-    const respondidas = responses.map(r => r.questionId)
-    const faltando = obrigatorias.filter(qid => !respondidas.includes(qid))
+    const obrigatorias = form.questions.filter((q: Question) => q.required).map((q: Question) => q.id)
+    const respondidas = responses.map((r: ResponseData) => r.questionId)
+    const faltando = obrigatorias.filter((qid: string) => !respondidas.includes(qid))
     if (faltando.length > 0) {
       return NextResponse.json({ message: "Responda todas as perguntas obrigatórias." }, { status: 400 })
     }
@@ -45,7 +53,7 @@ export async function POST(req: Request) {
     }
     // Salvar respostas
     await prisma.$transaction(
-      responses.map((r: any) =>
+      responses.map((r: ResponseData) =>
         prisma.response.create({
           data: {
             userId: session.user.id,
@@ -56,8 +64,21 @@ export async function POST(req: Request) {
         })
       )
     )
+
+    // Se o formulário gera certificado, gerar automaticamente
+    if (form.generatesCertificate) {
+      try {
+        const certificateService = new CertificateService();
+        await certificateService.generateCertificate(session.user.id, formId);
+      } catch (error) {
+        console.error('Erro ao gerar certificado:', error);
+        // Não retornar erro para o usuário, pois as respostas foram salvas com sucesso
+      }
+    }
+
     return NextResponse.json({ message: "Respostas salvas com sucesso!" })
   } catch (error) {
+    console.error('Erro ao salvar respostas:', error);
     return NextResponse.json({ message: "Erro ao salvar respostas" }, { status: 500 })
   }
 }

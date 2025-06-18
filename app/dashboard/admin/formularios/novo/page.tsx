@@ -51,6 +51,7 @@ interface FormData {
   status: string
   endDate: Date | null
   estimatedTime: string
+  generatesCertificate: boolean
   questions: Question[]
 }
 
@@ -93,6 +94,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     startDate: initialData.startDate ? new Date(initialData.startDate) : null,
     endDate: initialData.deadline ? new Date(initialData.deadline) : null,
     estimatedTime: initialData.estimatedTime || "",
+    generatesCertificate: initialData.generatesCertificate || false,
     status: initialData.status || "ACTIVE",
     questions: Array.isArray(initialData.questions)
       ? initialData.questions.map(normalizeQuestion)
@@ -104,6 +106,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     startDate: null as Date | null,
     endDate: null as Date | null,
     estimatedTime: "",
+    generatesCertificate: false,
     status: "ACTIVE",
     questions: [] as Question[],
   })
@@ -466,6 +469,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
           status: formData.status,
           deadline: formData.endDate,
           estimatedTime: formData.estimatedTime,
+          generatesCertificate: formData.generatesCertificate,
           questions: formData.questions.map((q: Question) => ({
             id: q.id,
             text: q.text,
@@ -910,6 +914,42 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                       </PopoverContent>
                     </Popover>
                   </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Gerar Certificado</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Ao concluir este formulário, o participante receberá um certificado
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.generatesCertificate}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, generatesCertificate: checked })
+                      }
+                    />
+                  </div>
+
+                  {formData.generatesCertificate && (
+                    <div className="space-y-2">
+                      <Label htmlFor="estimatedTime">Carga Horária (minutos)</Label>
+                      <Input
+                        id="estimatedTime"
+                        type="number"
+                        value={formData.estimatedTime}
+                        onChange={(e) =>
+                          setFormData({ ...formData, estimatedTime: e.target.value })
+                        }
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Esta informação aparecerá no certificado
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <Separator />

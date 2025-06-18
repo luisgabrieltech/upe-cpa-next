@@ -24,6 +24,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   responses     Response[]
   createdForms  Form[]    @relation("FormCreator")
+  certificates  Certificate[]
   active        Boolean   @default(true)
 }
 
@@ -36,12 +37,14 @@ model Form {
   externalStatus ExternalStatus @default(HIDDEN)
   deadline    DateTime?
   estimatedTime String?
+  generatesCertificate Boolean @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   createdBy   User       @relation("FormCreator", fields: [createdById], references: [id])
   createdById String
   questions   Question[]
   responses   Response[]
+  certificates Certificate[]
   visibleToRoles   String[]  @default([])
   visibleToUserIds String[]  @default([])
 }
@@ -76,6 +79,33 @@ model Response {
   updatedAt  DateTime @updatedAt
 
   @@unique([userId, formId, questionId])
+}
+
+model Certificate {
+  id             String         @id @default(cuid())
+  validationCode String         @unique
+  userId         String
+  formId         String
+  issuedAt       DateTime       @default(now())
+  hash           String
+  metadata       Json?          @default("{}")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  form           Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
+  validationLogs ValidationLog[]
+}
+
+model ValidationLog {
+  id            String      @id @default(cuid())
+  certificateId String
+  validatedAt   DateTime    @default(now())
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
+  
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
