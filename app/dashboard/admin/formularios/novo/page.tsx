@@ -775,6 +775,158 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     }))
   }
 
+  const renderQuestionInput = (question: Question, index: number) => {
+    const realIndex = formData.questions.slice(0, index).filter(q => q.type !== "section").length;
+    
+    switch (question.type) {
+      case "multiple_choice":
+        return (
+          <RadioGroup 
+            defaultValue=""
+            onValueChange={(value) => updateResponse(question.id, value)}
+          >
+            {question.options.map((option, optIndex) => (
+              <div key={optIndex} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`option-${question.id}-${optIndex}`} />
+                <Label htmlFor={`option-${question.id}-${optIndex}`}>{option}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        );
+
+      case "checkbox":
+        return (
+          <div className="space-y-2">
+            {question.options.map((option, optIndex) => (
+              <div key={optIndex} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`checkbox-${question.id}-${optIndex}`}
+                  onCheckedChange={(checked) => {
+                    const currentValues = Array.isArray(responses[question.id]) 
+                      ? [...responses[question.id]] 
+                      : [];
+                    
+                    if (checked) {
+                      updateResponse(question.id, [...currentValues, option]);
+                    } else {
+                      updateResponse(
+                        question.id, 
+                        currentValues.filter(v => v !== option)
+                      );
+                    }
+                  }}
+                />
+                <Label htmlFor={`checkbox-${question.id}-${optIndex}`}>{option}</Label>
+              </div>
+            ))}
+          </div>
+        );
+
+      case "text":
+        return (
+          <Textarea 
+            placeholder="Digite sua resposta aqui"
+            onChange={(e) => updateResponse(question.id, e.target.value)}
+          />
+        );
+
+      case "scale":
+        return (
+          <div className="space-y-2">
+            <div className="flex justify-between px-1">
+              <span className="text-sm">1 - Muito insatisfeito</span>
+              <span className="text-sm">5 - Muito satisfeito</span>
+            </div>
+            <RadioGroup 
+              defaultValue="" 
+              className="flex justify-between"
+              onValueChange={(value) => updateResponse(question.id, value)}
+            >
+              {[1, 2, 3, 4, 5].map((num) => (
+                <div key={num} className="flex flex-col items-center gap-2">
+                  <RadioGroupItem value={String(num)} id={`scale-${question.id}-${num}`} />
+                  <Label htmlFor={`scale-${question.id}-${num}`} className="text-sm">
+                    {num}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+        );
+
+      case "dropdown":
+        return (
+          <Select onValueChange={(value) => updateResponse(question.id, value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecione uma opção" />
+            </SelectTrigger>
+            <SelectContent>
+              {question.options.map((option, optIndex) => (
+                <SelectItem key={optIndex} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+
+      case "grid":
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="p-2 border"></th>
+                  {question.columns?.map((column, colIndex) => (
+                    <th key={colIndex} className="p-2 border text-center text-sm">
+                      {column}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {question.rows?.map((row, rowIndex) => {
+                  const rowName = `grid-row-${question.id}-${rowIndex}`;
+                  
+                  return (
+                    <tr key={rowIndex}>
+                      <td className="p-2 border font-medium text-sm">{row}</td>
+                      {question.columns?.map((_, colIndex) => {
+                        const radioValue = `${rowIndex}-${colIndex}`;
+                        const radioId = `grid-${question.id}-${rowIndex}-${colIndex}`;
+                        
+                        return (
+                          <td key={colIndex} className="p-2 border text-center">
+                            <input
+                              type="radio"
+                              name={rowName}
+                              value={radioValue}
+                              id={radioId}
+                              className="h-4 w-4 rounded-full border border-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              onChange={() => {
+                                const currentResponses = responses[question.id] || {};
+                                updateResponse(question.id, {
+                                  ...currentResponses,
+                                  [rowIndex]: radioValue
+                                });
+                              }}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+
+      default:
+        return <div className="text-muted-foreground">Tipo de pergunta não suportado</div>;
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="w-full p-4 md:p-6">
