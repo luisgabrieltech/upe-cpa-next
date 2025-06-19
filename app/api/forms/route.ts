@@ -72,7 +72,6 @@ export async function POST(req: Request) {
           generatesCertificate: generatesCertificate || false,
           questions: {
             create: questions.map((q: any, idx: number) => ({
-              id: q.id,
               text: q.text,
               type: q.type,
               required: q.required,
@@ -102,7 +101,6 @@ export async function POST(req: Request) {
         createdBy: { connect: { id: session.user.id } },
         questions: {
           create: questions.map((q: any, idx: number) => ({
-            id: q.id,
             text: q.text,
             type: q.type,
             required: q.required,
