@@ -24,17 +24,27 @@ export default function CertificadosPage() {
   const { data: session } = useSession()
 
   useEffect(() => {
-    // TODO: Implementar a busca de certificados quando a API estiver pronta
-    const fetchData = async () => {
-      setLoading(true)
-      // Simulando dados por enquanto
-      setTimeout(() => {
-        setCertificates([])
-        setLoading(false)
-      }, 1000)
-    }
-    fetchData()
-  }, [])
+    const fetchCertificates = async () => {
+      if (!session) return;
+      setLoading(true);
+      try {
+        const res = await fetch(getApiUrl("certificates"));
+        if (res.ok) {
+          const data = await res.json();
+          setCertificates(data);
+        } else {
+          setCertificates([]);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar certificados:", error);
+        setCertificates([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCertificates();
+  }, [session])
 
   const filteredCertificates = certificates.filter(
     (cert) =>
