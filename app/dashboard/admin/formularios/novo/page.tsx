@@ -52,6 +52,7 @@ interface FormData {
   endDate: Date | null
   estimatedTime: string
   generatesCertificate: boolean
+  certificateHours: string
   questions: Question[]
 }
 
@@ -95,6 +96,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     endDate: initialData.deadline ? new Date(initialData.deadline) : null,
     estimatedTime: initialData.estimatedTime || "",
     generatesCertificate: initialData.generatesCertificate || false,
+    certificateHours: initialData.certificateHours || "",
     status: initialData.status || "ACTIVE",
     questions: Array.isArray(initialData.questions)
       ? initialData.questions.map(normalizeQuestion)
@@ -107,6 +109,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     endDate: null as Date | null,
     estimatedTime: "",
     generatesCertificate: false,
+    certificateHours: "",
     status: "ACTIVE",
     questions: [] as Question[],
   })
@@ -470,6 +473,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
           deadline: formData.endDate,
           estimatedTime: formData.estimatedTime,
           generatesCertificate: formData.generatesCertificate,
+          certificateHours: formData.certificateHours,
           questions: formData.questions.map((q: Question) => ({
             id: q.id,
             text: q.text,
@@ -936,13 +940,14 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
 
                   {formData.generatesCertificate && (
                     <div className="space-y-2">
-                      <Label htmlFor="estimatedTime">Carga Horária (minutos)</Label>
+                      <Label htmlFor="certificateHours">Carga Horária do Certificado (minutos)</Label>
                       <Input
-                        id="estimatedTime"
+                        id="certificateHours"
                         type="number"
-                        value={formData.estimatedTime}
+                        placeholder="Ex: 60"
+                        value={formData.certificateHours}
                         onChange={(e) =>
-                          setFormData({ ...formData, estimatedTime: e.target.value })
+                          setFormData({ ...formData, certificateHours: e.target.value })
                         }
                       />
                       <p className="text-sm text-muted-foreground">

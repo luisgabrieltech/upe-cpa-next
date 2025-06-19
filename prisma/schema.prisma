@@ -38,6 +38,7 @@ model Form {
   deadline    DateTime?
   estimatedTime String?
   generatesCertificate Boolean @default(false)
+  certificateHours String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   createdBy   User       @relation("FormCreator", fields: [createdById], references: [id])

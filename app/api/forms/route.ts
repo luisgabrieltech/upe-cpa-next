@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     }
 
     const data = await req.json()
-    const { id, title, description, category, status, deadline, questions, estimatedTime } = data
+    const { id, title, description, category, status, deadline, questions, estimatedTime, generatesCertificate, certificateHours } = data
 
     // Validar categoria
     const validCategories = ["DOCENTES", "DISCENTES", "EGRESSOS", "TECNICOS_UNIDADES", "TECNICOS_COMPLEXO"]
@@ -69,6 +69,7 @@ export async function POST(req: Request) {
           status,
           deadline: deadline ? new Date(deadline) : null,
           estimatedTime,
+          generatesCertificate: generatesCertificate || false,
           questions: {
             create: questions.map((q: any, idx: number) => ({
               id: q.id,
@@ -97,6 +98,7 @@ export async function POST(req: Request) {
         status,
         deadline: deadline ? new Date(deadline) : null,
         estimatedTime,
+        generatesCertificate: generatesCertificate || false,
         createdBy: { connect: { id: session.user.id } },
         questions: {
           create: questions.map((q: any, idx: number) => ({
