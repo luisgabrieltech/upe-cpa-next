@@ -66,12 +66,10 @@ export async function POST(req: Request) {
     )
 
     // Se o formulário gera certificado, gerar automaticamente
-    console.log('Verificando geração de certificado para o formulário:', form.id, ' - Gera certificado?', form.generatesCertificate);
     if (form.generatesCertificate) {
       try {
         const certificateService = new CertificateService();
         await certificateService.generateCertificate(session.user.id, formId);
-        return NextResponse.json({ message: "Respostas salvas e certificado gerado com sucesso!" });
       } catch (error) {
         console.error('Erro ao gerar certificado:', error);
         // Não retornar erro para o usuário, pois as respostas foram salvas com sucesso

@@ -3,64 +3,67 @@ import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { CertificateService } from "@/lib/certificate-service"
 import fs from "fs/promises"
+import path from "path"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function GET(
-  request: NextRequest,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     const certificateId = params.id
 
-    // Buscar certificado
+    if (!certificateId) {
+      return NextResponse.json(
+        { message: "ID do certificado não fornecido" },
+        { status: 400 }
+      )
+    }
+
     const certificate = await prisma.certificate.findUnique({
       where: { id: certificateId },
-      include: { user: true }
+      select: { userId: true, form: { select: { title: true } } },
     })
 
     if (!certificate) {
       return NextResponse.json(
-        { error: "Certificado não encontrado" },
+        { message: "Certificado não encontrado" },
         { status: 404 }
       )
     }
 
-    // Verificar permissão (apenas o próprio usuário ou admin pode baixar)
-    if (!session?.user || (session.user.email !== certificate.user.email && session.user.role !== "ADMIN")) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 403 }
-      )
+    // Apenas o dono do certificado ou um admin pode baixar
+    if (session?.user.role !== "ADMIN" && session?.user.id !== certificate.userId) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 403 })
     }
 
-    // Verificar se o arquivo existe
-    const certificateService = new CertificateService()
-    const exists = await certificateService.certificateExists(certificateId)
+    const service = new CertificateService()
+    const pdfPath = service.getCertificatePath(certificateId)
 
-    if (!exists) {
+    try {
+      await fs.access(pdfPath)
+    } catch (error) {
       return NextResponse.json(
-        { error: "Arquivo do certificado não encontrado" },
+        { message: "Arquivo do certificado não encontrado no servidor" },
         { status: 404 }
       )
     }
 
-    // Ler arquivo
-    const pdfPath = certificateService.getCertificatePath(certificateId)
     const pdfBuffer = await fs.readFile(pdfPath)
+    const formTitle = certificate.form.title.replace(/\s/g, '_') // Prepara o nome do arquivo
 
-    // Retornar PDF
-    const response = new NextResponse(pdfBuffer)
-    response.headers.set("Content-Type", "application/pdf")
-    response.headers.set(
-      "Content-Disposition",
-      `attachment; filename="certificado-${certificate.validationCode}.pdf"`
-    )
-
-    return response
+    return new NextResponse(pdfBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="certificado_${formTitle}.pdf"`,
+      },
+    })
   } catch (error) {
     console.error("Erro ao baixar certificado:", error)
     return NextResponse.json(
-      { error: "Erro ao baixar certificado" },
+      { message: "Erro interno ao processar o download do certificado" },
       { status: 500 }
     )
   }

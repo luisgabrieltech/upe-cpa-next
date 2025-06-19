@@ -82,27 +82,18 @@ export class CertificateService {
     });
 
     // Criar registro no banco
-    console.log('[CertificateService] Tentando criar registro no banco de dados...');
-    let certificate;
-    try {
-      certificate = await prisma.certificate.create({
-        data: {
-          validationCode,
-          userId,
-          formId,
-          hash,
-          metadata: metadata as any,
-          // O PDF não será mais salvo aqui para evitar sobrecarregar o DB
-        }
-      });
-      console.log('[CertificateService] Registro criado com sucesso no banco. ID:', certificate.id);
-    } catch (error) {
-      console.error('[CertificateService] FALHA AO CRIAR REGISTRO NO BANCO:', error);
-      throw new Error('Não foi possível salvar o certificado no banco de dados.');
-    }
+    const certificate = await prisma.certificate.create({
+      data: {
+        validationCode,
+        userId,
+        formId,
+        hash,
+        metadata: metadata as any,
+        // O PDF não será mais salvo aqui para evitar sobrecarregar o DB
+      }
+    });
 
     // Salvar PDF no sistema de arquivos usando o ID do banco
-    console.log(`[CertificateService] Salvando arquivo PDF em disco: ${certificate.id}.pdf`);
     const pdfPath = path.join(this.certificatesDir, `${certificate.id}.pdf`);
     await fs.writeFile(pdfPath, pdfBuffer);
 

@@ -96,14 +96,14 @@ export default function CertificadosPage() {
                           variant="outline"
                           size="sm"
                           className="text-upe-blue hover:text-upe-blue/90"
-                          onClick={() => window.open(routes.dashboard.certificates.view(certificate.id), '_blank')}
+                          onClick={() => window.open(getApiUrl(`certificates/${certificate.id}/download`), '_blank')}
                         >
                           Visualizar
                         </Button>
                         <Button
                           size="sm"
                           className="bg-upe-blue hover:bg-upe-blue/90 text-white"
-                          onClick={() => window.open(routes.dashboard.certificates.download(certificate.id), '_blank')}
+                          onClick={() => window.location.href = getApiUrl(`certificates/${certificate.id}/download`)}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Baixar
