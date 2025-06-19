@@ -62,7 +62,7 @@ export class CertificateService {
       formDescription: form.description ?? undefined,
       userName: user.name,
       userEmail: user.email,
-      workload: form.estimatedTime ?? undefined
+      workload: form.certificateHours ?? undefined
     };
 
     // Gerar hash para validação
@@ -74,7 +74,7 @@ export class CertificateService {
     });
 
     // Gerar PDF primeiro para garantir que não há erros
-    const validationUrl = `${process.env.NEXT_PUBLIC_APP_URL}${routes.home}/validar?code=${validationCode}`;
+    const validationUrl = `https://sites.upe.br/sistemacpa/validar?code=${validationCode}`;
     const pdfBuffer = await generateCertificatePDF({
       metadata,
       validationCode,

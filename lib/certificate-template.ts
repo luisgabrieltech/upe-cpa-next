@@ -70,7 +70,7 @@ export async function generateCertificatePDF(options: CertificateTemplateOptions
 
   if (metadata.workload) {
     doc.moveDown(0.5)
-       .text(`Carga horária: ${metadata.workload}`, { align: 'center' });
+       .text(`Carga horária: ${metadata.workload} horas`, { align: 'center' });
   }
 
   // Código de validação

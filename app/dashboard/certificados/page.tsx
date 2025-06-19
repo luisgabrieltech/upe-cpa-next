@@ -93,20 +93,12 @@ export default function CertificadosPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-upe-blue hover:text-upe-blue/90"
-                          onClick={() => window.open(getApiUrl(`certificates/${certificate.id}/download`), '_blank')}
-                        >
-                          Visualizar
-                        </Button>
-                        <Button
                           size="sm"
                           className="bg-upe-blue hover:bg-upe-blue/90 text-white"
                           onClick={() => window.location.href = getApiUrl(`certificates/${certificate.id}/download`)}
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Baixar
+                          Baixar Certificado
                         </Button>
                       </div>
                     </div>
