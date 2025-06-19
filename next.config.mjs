@@ -3,6 +3,7 @@ const nextConfig = {
   // basePath: '/sistemacpa',  // ← Mantém comentado (nginx gerencia)
   assetPrefix: '/sistemacpa',  // ← Para CSS/JS carregarem corretamente
   trailingSlash: false,
+  serverExternalPackages: ['pdfkit'],
   eslint: {
     ignoreDuringBuilds: true,
   },

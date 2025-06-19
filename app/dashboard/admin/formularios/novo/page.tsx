@@ -94,9 +94,9 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     category: initialData.category || "",
     startDate: initialData.startDate ? new Date(initialData.startDate) : null,
     endDate: initialData.deadline ? new Date(initialData.deadline) : null,
-    estimatedTime: initialData.estimatedTime || "",
-    generatesCertificate: initialData.generatesCertificate || false,
-    certificateHours: initialData.certificateHours || "",
+    estimatedTime: initialData.estimatedTime ?? "",
+    generatesCertificate: initialData.generatesCertificate ?? false,
+    certificateHours: initialData.certificateHours ?? "",
     status: initialData.status || "ACTIVE",
     questions: Array.isArray(initialData.questions)
       ? initialData.questions.map(normalizeQuestion)
@@ -184,9 +184,9 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
       }
       
       // Limpa respostas de questões que dependem desta
-      formData.questions.forEach((question: Question) => {
-        if (question.conditional?.dependsOn === questionId) {
-          delete newResponses[question.id];
+      formData.questions.forEach((q: Question) => {
+        if (q.conditional?.dependsOn === questionId) {
+          delete newResponses[q.id];
         }
       });
       
@@ -221,7 +221,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   };
 
   const editQuestion = (questionId: string) => {
-    const questionToEdit = formData.questions.find(q => q.id === questionId);
+    const questionToEdit = formData.questions.find((q: Question) => q.id === questionId);
     if (questionToEdit) {
       setCurrentQuestion({...questionToEdit});
       setEditingQuestionId(questionId);
@@ -247,7 +247,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     }
 
     if (editingQuestionId) {
-      const updatedQuestions = formData.questions.map(q =>
+      const updatedQuestions = formData.questions.map((q: Question) =>
         q.id === editingQuestionId ? { ...currentQuestion, id: editingQuestionId } : q
       );
       setFormData({
@@ -278,9 +278,10 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   }
 
   const removeQuestion = (questionId: string) => {
+    const updatedQuestions = formData.questions.filter((q: Question) => q.id !== questionId);
     setFormData({
       ...formData,
-      questions: formData.questions.filter((q) => q.id !== questionId),
+      questions: updatedQuestions,
     })
   }
 
@@ -407,91 +408,101 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   const handleConditionChange = (q: Question, index: number, field: "type" | "value" | "dependsOn", value: string) => {
     if (!q.conditional) return;
     
+    const updatedConditions = [...q.conditional.conditions];
+    const updatedDependencies = { ...q.conditional };
+  
     if (field === "dependsOn") {
-      setCurrentQuestion((prev: Question) => ({
-        ...prev,
-        conditional: {
-          ...prev.conditional!,
-          dependsOn: value,
-          // Reset conditions when changing dependent question
-          conditions: [{ type: "equals", value: "" }]
+      updatedDependencies.dependsOn = value;
+    } else {
+      updatedConditions[index] = {
+        ...updatedConditions[index],
+        [field]: value,
+      };
+    }
+  
+    const updatedQuestion = {
+      ...q,
+      conditional: {
+        ...updatedDependencies,
+        conditions: updatedConditions,
+      },
+    };
+  
+    const updatedQuestions = formData.questions.map((question: Question) =>
+      question.id === q.id ? updatedQuestion : question
+    );
+  
+    setFormData({
+      ...formData,
+      questions: updatedQuestions,
+    });
+  };
+
+  const handleConditionOperatorChange = (q: Question, idx: number, value: "OR" | "AND") => {
+    if (!q.conditional) return;
+    
+    const updatedQuestion = {
+      ...q,
+      conditional: {
+        ...q.conditional,
+        operator: value,
+      },
+    };
+
+    const updatedQuestions = formData.questions.map((question: Question) =>
+      question.id === q.id ? updatedQuestion : question
+    );
+
+    setFormData({
+      ...formData,
+      questions: updatedQuestions,
+    });
+  };
+
+  const handleOptionDelete = (option: string) => {
+    const questionId = formData.questions.find(q => q.options.includes(option))?.id;
+    if (!questionId) return;
+
+    // Remove as respostas que dependem da opção deletada
+    const newResponses = { ...responses };
+    formData.questions.forEach((q: Question) => {
+      if (q.conditional?.dependsOn === questionId) {
+        if (Array.isArray(newResponses[q.id])) {
+          const dependentValues = Array.isArray(responses[questionId]) ? responses[questionId] : [responses[questionId]];
+          if (dependentValues.includes(option)) {
+            delete newResponses[q.id];
+          }
+        } else if (responses[questionId] === option) {
+          delete newResponses[q.id];
         }
-      }));
+      }
+    });
+    setResponses(newResponses);
+  };
+
+  const saveForm = async () => {
+    // Validação básica
+    if (!formData.title.trim()) {
+      alert("Por favor, insira um título para o formulário");
       return;
     }
 
-    const newConditions = [...q.conditional.conditions];
-    newConditions[index] = {
-      ...newConditions[index],
-      [field]: value
-    };
-    
-    setCurrentQuestion((prev: Question) => ({
-      ...prev,
-      conditional: {
-        ...prev.conditional!,
-        conditions: newConditions
-      }
-    }));
-  };
-
-  const handleConditionOperatorChange = (q: Question, condition: { questionId: string; operator: string; value: string }, idx: number, value: string) => {
-    if (!q.conditional) return
-    const newConditions = [...q.conditional.conditions]
-    newConditions[idx] = {
-      ...condition,
-      operator: value
+    const dataToSend = {
+      ...formData,
+      questions: formData.questions.map((q: Question) => ({
+        ...q,
+        // Garante que options seja um array
+        options: Array.isArray(q.options) ? q.options : [],
+      })),
     }
-    setCurrentQuestion(prev => ({
-      ...prev,
-      conditional: {
-        ...prev.conditional!,
-        conditions: newConditions
-      }
-    }))
-  }
 
-  const handleOptionDelete = (option: string) => {
-    setCurrentQuestion(prev => ({
-      ...prev,
-      options: prev.options.filter(o => o !== option)
-    }))
-  }
-
-  const saveForm = async () => {
     try {
-      const res = await fetch(getApiUrl('forms'), {
+      const url = getApiUrl(initialData?.id ? `forms?id=${initialData.id}` : "forms")
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          id: initialData?.id,
-          title: formData.title,
-          description: formData.description,
-          category: formData.category?.toUpperCase(),
-          status: formData.status,
-          deadline: formData.endDate,
-          estimatedTime: formData.estimatedTime,
-          generatesCertificate: formData.generatesCertificate,
-          certificateHours: formData.certificateHours,
-          questions: formData.questions.map((q: Question) => ({
-            id: q.id,
-            text: q.text,
-            type: q.type
-              .replace("multiple_choice", "MULTIPLE_CHOICE")
-              .replace("checkbox", "CHECKBOX")
-              .replace("text", "TEXT")
-              .replace("scale", "SCALE")
-              .replace("grid", "GRID")
-              .replace("dropdown", "DROPDOWN")
-              .replace("section", "SECTION"),
-            required: q.required,
-            options: q.options || [],
-            rows: q.rows || [],
-            columns: q.columns || [],
-            conditional: q.conditional || null,
-          })),
-        }),
+        body: JSON.stringify(dataToSend),
       })
       if (res.ok) {
         router.push(routes.dashboard.admin.forms.home)
@@ -1145,7 +1156,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                       ? "bg-blue-100 text-blue-800" 
                                       : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                                   }`}
-                                  onClick={() => handleConditionOperatorChange(currentQuestion, currentQuestion.conditional, 0, "OR")}
+                                  onClick={() => handleConditionOperatorChange(currentQuestion, 0, "OR")}
                                 >
                                   OU (qualquer condição)
                                 </button>
@@ -1156,7 +1167,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                       ? "bg-blue-100 text-blue-800" 
                                       : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                                   }`}
-                                  onClick={() => handleConditionOperatorChange(currentQuestion, currentQuestion.conditional, 0, "AND")}
+                                  onClick={() => handleConditionOperatorChange(currentQuestion, 0, "AND")}
                                 >
                                   E (todas as condições)
                                 </button>
@@ -1496,146 +1507,80 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                         );
                       }
                       return (
-                        <div key={question.id} className="space-y-3">
-                          <h3 className="font-medium">
-                            {realIndex + 1}. {question.text}
-                            {question.required && <span className="text-upe-red ml-1">*</span>}
-                          </h3>
+                        <div key={question.id} className="space-y-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800/50 relative group">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-lg">{question.text || "Nova Seção"}</span>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{question.description}</p>
+                          </div>
+                          {renderQuestionInput(question, index)}
 
-                          {question.type === "multiple_choice" && (
-                            <RadioGroup 
-                              defaultValue=""
-                              onValueChange={(value) => updateResponse(question.id, value)}
-                            >
-                              {question.options.map((option, optIndex) => (
-                                <div key={optIndex} className="flex items-center space-x-2">
-                                  <RadioGroupItem value={option} id={`option-${question.id}-${optIndex}`} />
-                                  <Label htmlFor={`option-${question.id}-${optIndex}`}>{option}</Label>
-                                </div>
-                              ))}
-                            </RadioGroup>
-                          )}
-
-                          {question.type === "checkbox" && (
-                            <div className="space-y-2">
-                              {question.options.map((option, optIndex) => (
-                                <div key={optIndex} className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id={`checkbox-${question.id}-${optIndex}`}
-                                    onCheckedChange={(checked) => {
-                                      const currentValues = Array.isArray(responses[question.id]) 
-                                        ? [...responses[question.id]] 
-                                        : [];
-                                      
-                                      if (checked) {
-                                        updateResponse(question.id, [...currentValues, option]);
-                                      } else {
-                                        updateResponse(
-                                          question.id, 
-                                          currentValues.filter(v => v !== option)
-                                        );
-                                      }
-                                    }}
-                                  />
-                                  <Label htmlFor={`checkbox-${question.id}-${optIndex}`}>{option}</Label>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {question.type === "text" && (
-                            <Textarea 
-                              placeholder="Digite sua resposta aqui"
-                              onChange={(e) => updateResponse(question.id, e.target.value)}
-                            />
-                          )}
-
-                          {question.type === "scale" && (
-                            <div className="space-y-2">
-                              <div className="flex justify-between px-1">
-                                <span className="text-sm">1 - Muito insatisfeito</span>
-                                <span className="text-sm">5 - Muito satisfeito</span>
+                          {question.conditional && (
+                            <div className="mt-4 p-3 border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-700/50 rounded-r-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Lógica Condicional</p>
+                                <Select
+                                  value={question.conditional.operator}
+                                  onValueChange={(value: "OR" | "AND") => handleConditionOperatorChange(question, index, value)}
+                                >
+                                  <SelectTrigger className="w-[100px] h-8 text-xs">
+                                    <SelectValue placeholder="Operador" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="OR">SE QUALQUER</SelectItem>
+                                    <SelectItem value="AND">SE TODOS</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
-                              <RadioGroup 
-                                defaultValue="" 
-                                className="flex justify-between"
-                                onValueChange={(value) => updateResponse(question.id, value)}
-                              >
-                                {[1, 2, 3, 4, 5].map((num) => (
-                                  <div key={num} className="flex flex-col items-center gap-2">
-                                    <RadioGroupItem value={String(num)} id={`scale-${question.id}-${num}`} />
-                                    <Label htmlFor={`scale-${question.id}-${num}`} className="text-sm">
-                                      {num}
-                                    </Label>
+
+                              <div className="space-y-2">
+                                {question.conditional.conditions.map((condition, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <span>se</span>
+                                    <Select
+                                      value={question.conditional?.dependsOn}
+                                      onValueChange={(value) => handleConditionChange(question, idx, "dependsOn", value)}
+                                    >
+                                      <SelectTrigger className="flex-1 h-8 text-xs">
+                                        <SelectValue placeholder="Pergunta" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {formData.questions
+                                          .filter((q: Question) => q.id !== question.id && ["multiple_choice", "checkbox", "dropdown"].includes(q.type))
+                                          .map((q: Question) => (
+                                            <SelectItem key={q.id} value={q.id}>{q.text}</SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Select
+                                      value={condition.type}
+                                      onValueChange={(value: "equals" | "contains") => handleConditionChange(question, idx, "type", value)}
+                                    >
+                                      <SelectTrigger className="w-[120px] h-8 text-xs">
+                                        <SelectValue placeholder="Condição" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="equals">for igual a</SelectItem>
+                                        <SelectItem value="contains">contiver</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Input
+                                      type="text"
+                                      placeholder="Valor"
+                                      value={condition.value}
+                                      onChange={(e) => handleConditionChange(question, idx, "value", e.target.value)}
+                                      className="flex-1 h-8 text-xs"
+                                    />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeCondition(idx)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 ))}
-                              </RadioGroup>
-                            </div>
-                          )}
+                              </div>
 
-                          {question.type === "dropdown" && (
-                            <Select onValueChange={(value) => updateResponse(question.id, value)}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selecione uma opção" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {question.options.map((option, optIndex) => (
-                                  <SelectItem key={optIndex} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-
-                          {question.type === "grid" && (
-                            <div className="overflow-x-auto">
-                              <table className="w-full border-collapse">
-                                <thead>
-                                  <tr>
-                                    <th className="p-2 border"></th>
-                                    {question.columns?.map((column, colIndex) => (
-                                      <th key={colIndex} className="p-2 border text-center text-sm">
-                                        {column}
-                                      </th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {question.rows?.map((row, rowIndex) => {
-                                    const rowName = `grid-row-${question.id}-${rowIndex}`;
-                                    
-                                    return (
-                                      <tr key={rowIndex}>
-                                        <td className="p-2 border font-medium text-sm">{row}</td>
-                                        {question.columns?.map((_, colIndex) => {
-                                          const radioValue = `${rowIndex}-${colIndex}`;
-                                          const radioId = `grid-${question.id}-${rowIndex}-${colIndex}`;
-                                          
-                                          return (
-                                            <td key={colIndex} className="p-2 border text-center">
-                                              <input
-                                                type="radio"
-                                                name={rowName}
-                                                value={radioValue}
-                                                id={radioId}
-                                                className="h-4 w-4 rounded-full border border-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                onChange={() => {
-                                                  const currentResponses = responses[question.id] || {};
-                                                  updateResponse(question.id, {
-                                                    ...currentResponses,
-                                                    [rowIndex]: radioValue
-                                                  });
-                                                }}
-                                              />
-                                            </td>
-                                          );
-                                        })}
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
+                              <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={() => addCondition()}>
+                                <Plus className="h-4 w-4 mr-1" />
+                                Adicionar condição
+                              </Button>
                             </div>
                           )}
                         </div>
