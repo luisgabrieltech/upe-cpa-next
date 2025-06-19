@@ -6,15 +6,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { CertificateMetadata as NewCertificateMetadata } from '@/types/certificate';
 
-export interface CertificateMetadata {
-  completionDate: string;
-  formTitle: string;
-  formDescription?: string;
-  userName: string;
-  userEmail: string;
-  workload?: string;
-}
-
 export class CertificateService {
   private certificatesDir: string;
 
@@ -65,13 +56,13 @@ export class CertificateService {
     const validationCode = generateValidationCode(formId, userId);
 
     // Preparar metadados
-    const metadata: NewCertificateMetadata = {
+    const metadata: CertificateMetadata = {
       completionDate: new Date().toISOString(),
       formTitle: form.title,
-      formDescription: form.description,
+      formDescription: form.description ?? undefined,
       userName: user.name,
       userEmail: user.email,
-      workload: form.estimatedTime
+      workload: form.estimatedTime ?? undefined
     };
 
     // Gerar hash para validação
@@ -82,18 +73,7 @@ export class CertificateService {
       issuedAt: new Date()
     });
 
-    // Criar registro no banco
-    const certificate = await prisma.certificate.create({
-      data: {
-        validationCode,
-        userId,
-        formId,
-        hash,
-        metadata
-      }
-    });
-
-    // Gerar PDF
+    // Gerar PDF primeiro para garantir que não há erros
     const validationUrl = `${process.env.NEXT_PUBLIC_APP_URL}${routes.home}/validar?code=${validationCode}`;
     const pdfBuffer = await generateCertificatePDF({
       metadata,
@@ -101,7 +81,28 @@ export class CertificateService {
       validationUrl
     });
 
-    // Salvar PDF
+    // Criar registro no banco
+    console.log('[CertificateService] Tentando criar registro no banco de dados...');
+    let certificate;
+    try {
+      certificate = await prisma.certificate.create({
+        data: {
+          validationCode,
+          userId,
+          formId,
+          hash,
+          metadata: metadata as any,
+          // O PDF não será mais salvo aqui para evitar sobrecarregar o DB
+        }
+      });
+      console.log('[CertificateService] Registro criado com sucesso no banco. ID:', certificate.id);
+    } catch (error) {
+      console.error('[CertificateService] FALHA AO CRIAR REGISTRO NO BANCO:', error);
+      throw new Error('Não foi possível salvar o certificado no banco de dados.');
+    }
+
+    // Salvar PDF no sistema de arquivos usando o ID do banco
+    console.log(`[CertificateService] Salvando arquivo PDF em disco: ${certificate.id}.pdf`);
     const pdfPath = path.join(this.certificatesDir, `${certificate.id}.pdf`);
     await fs.writeFile(pdfPath, pdfBuffer);
 
