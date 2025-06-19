@@ -1,7 +1,18 @@
 import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
-import { CertificateMetadata } from '@/types/certificate';
+
+/**
+ * Tipo para metadados do certificado
+ */
+export interface CertificateMetadata {
+  completionDate: string;
+  formTitle: string;
+  formDescription?: string;
+  userEmail: string;
+  userName: string;
+  workload?: string; // Carga horária, se aplicável
+}
 
 /**
  * Gera um código de validação único para o certificado
@@ -46,10 +57,7 @@ export async function generateCertificatePDF(data: {
     margin: 50
   });
 
-  // Configurar fonte e tamanhos
-  doc.font('Helvetica');
-
-  // Cabeçalho
+  // Cabeçalho (usando fonte padrão)
   doc.fontSize(24)
     .text('UNIVERSIDADE DE PERNAMBUCO', { align: 'center' })
     .moveDown(0.5);
@@ -133,18 +141,6 @@ export function parseValidationCode(code: string): {
     sequential: parts[2],
     year: parts[3]
   };
-}
-
-/**
- * Tipo para metadados do certificado
- */
-export interface CertificateMetadata {
-  completionDate: string;
-  formTitle: string;
-  formDescription?: string;
-  userEmail: string;
-  userName: string;
-  workload?: string; // Carga horária, se aplicável
 }
 
 /**

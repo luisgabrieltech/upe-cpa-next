@@ -31,10 +31,7 @@ export async function generateCertificatePDF(options: CertificateTemplateOptions
   // Gerar QR Code
   const qrCodeDataUrl = await QRCode.toDataURL(validationUrl);
 
-  // Configurar fonte e tamanhos
-  doc.font('Helvetica');
-
-  // Cabeçalho
+  // Cabeçalho (usando fonte padrão)
   doc.fontSize(24)
      .text('UNIVERSIDADE DE PERNAMBUCO', { align: 'center' });
   
