@@ -3,6 +3,21 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
+// Função para converter tipos de questão para o formato esperado pelo Prisma
+function convertQuestionType(type: string): string {
+  const typeMap: { [key: string]: string } = {
+    'multiple_choice': 'MULTIPLE_CHOICE',
+    'checkbox': 'CHECKBOX',
+    'text': 'TEXT',
+    'scale': 'SCALE',
+    'grid': 'GRID',
+    'dropdown': 'DROPDOWN',
+    'section': 'SECTION'
+  };
+  
+  return typeMap[type] || type.toUpperCase();
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
@@ -73,7 +88,7 @@ export async function POST(req: Request) {
           questions: {
             create: questions.map((q: any, idx: number) => ({
               text: q.text,
-              type: q.type,
+              type: convertQuestionType(q.type),
               required: q.required,
               options: q.options || [],
               rows: q.rows || [],
@@ -102,7 +117,7 @@ export async function POST(req: Request) {
         questions: {
           create: questions.map((q: any, idx: number) => ({
             text: q.text,
-            type: q.type,
+            type: convertQuestionType(q.type),
             required: q.required,
             options: q.options || [],
             rows: q.rows || [],
