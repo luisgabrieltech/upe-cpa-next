@@ -87,6 +87,7 @@ export async function POST(req: Request) {
           generatesCertificate: generatesCertificate || false,
           questions: {
             create: questions.map((q: any, idx: number) => ({
+              customId: q.id || null, // Salva o ID personalizado se fornecido
               text: q.text,
               type: convertQuestionType(q.type),
               required: q.required,
@@ -116,6 +117,7 @@ export async function POST(req: Request) {
         createdBy: { connect: { id: session.user.id } },
         questions: {
           create: questions.map((q: any, idx: number) => ({
+            customId: q.id || null, // Salva o ID personalizado se fornecido
             text: q.text,
             type: convertQuestionType(q.type),
             required: q.required,

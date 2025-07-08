@@ -67,7 +67,7 @@ interface NovoFormularioPageProps {
 
 function normalizeQuestion(q: any): Question {
   return {
-    id: q.id,
+    id: q.customId || q.id, // Usa customId se disponível, senão usa id automático
     type: (q.type || "text").toLowerCase(),
     text: q.text || "",
     required: q.required ?? true,

@@ -52,6 +52,7 @@ model Form {
 
 model Question {
   id          String   @id @default(cuid())
+  customId    String?  // ID personalizado opcional para identificação
   text        String
   type        QuestionType
   required    Boolean  @default(false)
