@@ -383,15 +383,26 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
 
   const addCondition = () => {
     if (currentQuestion.conditional) {
-      setCurrentQuestion({
+      const updatedQuestion = {
         ...currentQuestion,
         conditional: {
           ...currentQuestion.conditional,
           conditions: [
             ...currentQuestion.conditional.conditions,
-            { type: "equals", value: "" }
+            { type: "equals" as const, value: "" }
           ]
         }
+      };
+      
+      setCurrentQuestion(updatedQuestion);
+      
+      // Sincronizar com formData
+      const updatedQuestions = formData.questions.map((question: Question) =>
+        question.id === currentQuestion.id ? updatedQuestion : question
+      );
+      setFormData({
+        ...formData,
+        questions: updatedQuestions,
       });
     }
   };
@@ -400,12 +411,24 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     if (currentQuestion.conditional && currentQuestion.conditional.conditions.length > 1) {
       const newConditions = [...currentQuestion.conditional.conditions];
       newConditions.splice(index, 1);
-      setCurrentQuestion({
+      
+      const updatedQuestion = {
         ...currentQuestion,
         conditional: {
           ...currentQuestion.conditional,
           conditions: newConditions
         }
+      };
+      
+      setCurrentQuestion(updatedQuestion);
+      
+      // Sincronizar com formData
+      const updatedQuestions = formData.questions.map((question: Question) =>
+        question.id === currentQuestion.id ? updatedQuestion : question
+      );
+      setFormData({
+        ...formData,
+        questions: updatedQuestions,
       });
     }
   };
@@ -418,6 +441,10 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   
     if (field === "dependsOn") {
       updatedDependencies.dependsOn = value;
+      // Limpa as condições quando troca a questão dependente
+      updatedConditions.forEach((condition, idx) => {
+        updatedConditions[idx] = { ...condition, value: "" };
+      });
     } else {
       updatedConditions[index] = {
         ...updatedConditions[index],
@@ -441,6 +468,11 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
       ...formData,
       questions: updatedQuestions,
     });
+
+    // CORREÇÃO CRÍTICA: Sincronizar currentQuestion se for a questão sendo editada
+    if (q.id === currentQuestion.id) {
+      setCurrentQuestion(updatedQuestion);
+    }
   };
 
   const handleConditionOperatorChange = (q: Question, idx: number, value: "OR" | "AND") => {
@@ -462,6 +494,11 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
       ...formData,
       questions: updatedQuestions,
     });
+
+    // CORREÇÃO CRÍTICA: Sincronizar currentQuestion se for a questão sendo editada
+    if (q.id === currentQuestion.id) {
+      setCurrentQuestion(updatedQuestion);
+    }
   };
 
   const handleOptionDelete = (option: string) => {
@@ -1298,11 +1335,18 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                   <SelectValue placeholder="Selecione a pergunta" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {formData.questions.map((q, i) => (
-                                    <SelectItem key={q.id} value={q.id}>
-                                      {i + 1}. {q.text.length > 20 ? q.text.substring(0, 20) + "..." : q.text}
-                                    </SelectItem>
-                                  ))}
+                                  {formData.questions
+                                    .filter((q, i) => 
+                                      q.id !== currentQuestion.id && // Não a própria questão
+                                      q.type !== "section" && // Não seções
+                                      ["multiple_choice", "checkbox", "dropdown"].includes(q.type) // Só tipos com opções
+                                    )
+                                    .map((q, i) => (
+                                      <SelectItem key={q.id} value={q.id}>
+                                        {formData.questions.indexOf(q) + 1}. {q.text.length > 20 ? q.text.substring(0, 20) + "..." : q.text}
+                                      </SelectItem>
+                                    ))
+                                  }
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1391,16 +1435,26 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                                         <Select
                                           value={condition.value}
                                           onValueChange={(value) => handleConditionChange(currentQuestion, idx, "value", value)}
+                                          disabled={!currentQuestion.conditional?.dependsOn}
                                         >
                                           <SelectTrigger>
-                                            <SelectValue placeholder="Selecione uma opção" />
+                                            <SelectValue placeholder={
+                                              !currentQuestion.conditional?.dependsOn 
+                                                ? "Primeiro selecione uma questão" 
+                                                : dependentQuestion.options.filter(opt => opt.trim() !== "").length === 0
+                                                  ? "Nenhuma opção disponível"
+                                                  : "Selecione uma opção"
+                                            } />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            {dependentQuestion.options.map((option, optIdx) => (
-                                              <SelectItem key={optIdx} value={option}>
-                                                {option}
-                                              </SelectItem>
-                                            ))}
+                                            {dependentQuestion.options
+                                              .filter(option => option.trim() !== "") // Remove opções vazias
+                                              .map((option, optIdx) => (
+                                                <SelectItem key={optIdx} value={option}>
+                                                  {option}
+                                                </SelectItem>
+                                              ))
+                                            }
                                           </SelectContent>
                                         </Select>
                                       );
@@ -1677,71 +1731,29 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
 
                           {question.conditional && (
                             <div className="mt-4 p-3 border-l-4 border-blue-500 bg-blue-50 dark:bg-gray-700/50 rounded-r-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Lógica Condicional</p>
-                                <Select
-                                  value={question.conditional.operator}
-                                  onValueChange={(value: "OR" | "AND") => handleConditionOperatorChange(question, index, value)}
-                                >
-                                  <SelectTrigger className="w-[100px] h-8 text-xs">
-                                    <SelectValue placeholder="Operador" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="OR">SE QUALQUER</SelectItem>
-                                    <SelectItem value="AND">SE TODOS</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                              <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">Lógica Condicional</p>
+                              <div className="text-xs text-muted-foreground">
+                                <span>Exibida se: </span>
+                                {(() => {
+                                  const dependentQuestion = formData.questions.find(q => q.id === question.conditional?.dependsOn);
+                                  if (!dependentQuestion) return <span className="italic">Configuração incompleta</span>;
+                                  
+                                  const conditionsText = question.conditional.conditions.map((condition, idx) => (
+                                    <span key={idx}>
+                                      {idx > 0 && <span className="mx-1">{question.conditional?.operator === "AND" ? "E" : "OU"}</span>}
+                                      <span className="bg-muted px-1 rounded font-medium">
+                                        {condition.type === "equals" ? "=" : "⊃"} {condition.value || "(vazio)"}
+                                      </span>
+                                    </span>
+                                  ));
+                                  
+                                  return (
+                                    <span>
+                                      <span className="font-medium">{dependentQuestion.text}</span> {conditionsText}
+                                    </span>
+                                  );
+                                })()}
                               </div>
-
-                              <div className="space-y-2">
-                                {question.conditional.conditions.map((condition, idx) => (
-                                  <div key={idx} className="flex items-center gap-2">
-                                    <span>se</span>
-                                    <Select
-                                      value={question.conditional?.dependsOn}
-                                      onValueChange={(value) => handleConditionChange(question, idx, "dependsOn", value)}
-                                    >
-                                      <SelectTrigger className="flex-1 h-8 text-xs">
-                                        <SelectValue placeholder="Pergunta" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {formData.questions
-                                          .filter((q: Question) => q.id !== question.id && ["multiple_choice", "checkbox", "dropdown"].includes(q.type))
-                                          .map((q: Question) => (
-                                            <SelectItem key={q.id} value={q.id}>{q.text}</SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Select
-                                      value={condition.type}
-                                      onValueChange={(value: "equals" | "contains") => handleConditionChange(question, idx, "type", value)}
-                                    >
-                                      <SelectTrigger className="w-[120px] h-8 text-xs">
-                                        <SelectValue placeholder="Condição" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="equals">for igual a</SelectItem>
-                                        <SelectItem value="contains">contiver</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                    <Input
-                                      type="text"
-                                      placeholder="Valor"
-                                      value={condition.value}
-                                      onChange={(e) => handleConditionChange(question, idx, "value", e.target.value)}
-                                      className="flex-1 h-8 text-xs"
-                                    />
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeCondition(idx)}>
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-
-                              <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={() => addCondition()}>
-                                <Plus className="h-4 w-4 mr-1" />
-                                Adicionar condição
-                              </Button>
                             </div>
                           )}
                         </div>
