@@ -1206,10 +1206,10 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                     <Label htmlFor="question-id">ID personalizado da pergunta</Label>
                     <Input
                       id="question-id"
-                      placeholder="Ex: Q1, nota_final, etc."
+                      placeholder="Ex: Q1, avaliacao_satisfacao_infraestrutura, nome_completo_usuario, etc."
                       value={currentQuestion.id || ""}
                       onChange={(e) => handleQuestionChange(currentQuestion, "id", e.target.value)}
-                      maxLength={32}
+                      maxLength={128}
                     />
                   </div>
                   <div className="space-y-2">
