@@ -1448,7 +1448,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                               variant="ghost"
                               size="icon"
                               className="shrink-0 text-muted-foreground hover:text-red-500"
-                              onClick={() => handleOptionDelete(option)}
+                              onClick={() => removeOption(index)}
                               disabled={currentQuestion.options.length <= 2}
                             >
                               <Trash2 className="h-4 w-4" />
