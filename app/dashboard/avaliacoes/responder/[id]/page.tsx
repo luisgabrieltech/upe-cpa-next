@@ -45,36 +45,7 @@ interface FormData {
   questions: Question[]
 }
 
-function renderConditional(conditional: ConditionalRule, questions: Question[]) {
-  if (!conditional) return null
-  
-  try {
-    // Resolver o ID da questão dependente
-    const resolvedId = resolveQuestionId(conditional.dependsOn, questions);
-    const dependeDe = questions.find(q => q.id === resolvedId);
-    const dependeDeText = dependeDe ? `"${dependeDe.text}"` : `uma questão anterior`;
-    
-    const conds = conditional.conditions || [];
-    const op = conditional.operator === "AND" ? "E" : "OU";
-    const condText = conds.map((c) => {
-      const tipo = c.type === "equals" ? "for igual a" : "contiver";
-      return `${tipo} "${c.value}"`;
-    }).join(` ${op} `);
-    
-    return (
-      <div className="mt-2 p-2 text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 rounded border-l-2 border-blue-300">
-        <span className="font-medium">Condicional:</span> Esta questão aparece se {dependeDeText} {condText}.
-      </div>
-    );
-  } catch (error) {
-    console.error("Erro ao renderizar condicional:", error);
-    return (
-      <div className="mt-2 p-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 rounded border-l-2 border-red-300">
-        <span className="font-medium">Erro:</span> Configuração de condicional inválida.
-      </div>
-    );
-  }
-}
+
 
 /**
  * Resolve um ID de questão para o ID interno do banco
@@ -399,7 +370,7 @@ export default function ResponderAvaliacaoPage() {
                         </table>
                       </div>
                     )}
-                    {question.conditional && renderConditional(question.conditional, formData.questions)}
+
                   </div>
                 </CardContent>
               </Card>
