@@ -494,6 +494,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
 
     const dataToSend = {
       ...formData,
+      ...(initialData?.id && { id: initialData.id }), // Adiciona ID se for edição
       questions: formData.questions.map((q: Question) => ({
         ...q,
         // Garante que options seja um array
