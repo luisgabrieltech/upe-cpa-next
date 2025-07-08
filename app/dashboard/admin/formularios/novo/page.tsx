@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+
+// Constantes de limite para opções e elementos de grade
+const MAX_OPTIONS = 40;        // Para multiple choice, checkbox, dropdown
+const MAX_GRID_ROWS = 40;      // Para linhas de grade
+const MAX_GRID_COLUMNS = 40;   // Para colunas de grade
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -286,7 +291,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   }
 
   const addOption = () => {
-    if (currentQuestion.options.length < 10) {
+    if (currentQuestion.options.length < MAX_OPTIONS) {
       setCurrentQuestion({
         ...currentQuestion,
         options: [...currentQuestion.options, ""],
@@ -315,7 +320,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   }
 
   const addRow = () => {
-    if (currentQuestion.rows && currentQuestion.rows.length < 10) {
+    if (currentQuestion.rows && currentQuestion.rows.length < MAX_GRID_ROWS) {
       setCurrentQuestion({
         ...currentQuestion,
         rows: [...currentQuestion.rows, ""],
@@ -346,7 +351,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
   }
 
   const addColumn = () => {
-    if (currentQuestion.columns && currentQuestion.columns.length < 10) {
+    if (currentQuestion.columns && currentQuestion.columns.length < MAX_GRID_COLUMNS) {
       setCurrentQuestion({
         ...currentQuestion,
         columns: [...currentQuestion.columns, ""],
@@ -1456,7 +1461,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                           size="sm"
                           className="mt-2 w-full"
                           onClick={addOption}
-                          disabled={currentQuestion.options.length >= 10}
+                          disabled={currentQuestion.options.length >= MAX_OPTIONS}
                         >
                           <Plus className="mr-2 h-4 w-4" />
                           Adicionar opção
@@ -1496,7 +1501,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             size="sm"
                             className="mt-2 w-full"
                             onClick={addRow}
-                            disabled={(currentQuestion.rows?.length || 0) >= 10}
+                            disabled={(currentQuestion.rows?.length || 0) >= MAX_GRID_ROWS}
                           >
                             <Plus className="mr-2 h-4 w-4" />
                             Adicionar linha
@@ -1533,7 +1538,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                             size="sm"
                             className="mt-2 w-full"
                             onClick={addColumn}
-                            disabled={(currentQuestion.columns?.length || 0) >= 10}
+                            disabled={(currentQuestion.columns?.length || 0) >= MAX_GRID_COLUMNS}
                           >
                             <Plus className="mr-2 h-4 w-4" />
                             Adicionar coluna
