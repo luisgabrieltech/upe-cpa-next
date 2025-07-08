@@ -253,7 +253,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
 
     if (editingQuestionId) {
       const updatedQuestions = formData.questions.map((q: Question) =>
-        q.id === editingQuestionId ? { ...currentQuestion, id: editingQuestionId } : q
+        q.id === editingQuestionId ? { ...currentQuestion } : q
       );
       setFormData({
         ...formData,
