@@ -867,11 +867,14 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
               <SelectValue placeholder="Selecione uma opção" />
             </SelectTrigger>
             <SelectContent>
-              {question.options.map((option, optIndex) => (
-                <SelectItem key={optIndex} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
+              {question.options
+                .filter(option => option.trim() !== "") // Remove opções vazias
+                .map((option, optIndex) => (
+                  <SelectItem key={optIndex} value={option}>
+                    {option}
+                  </SelectItem>
+                ))
+              }
             </SelectContent>
           </Select>
         );
