@@ -16,15 +16,25 @@ import { toast } from "sonner"
 import { routes } from "@/lib/routes"
 import { getApiUrl } from "@/lib/api-utils"
 
+interface ConditionalRule {
+  dependsOn: string;
+  operator: "OR" | "AND";
+  conditions: Array<{
+    type: "equals" | "contains";
+    value: string;
+  }>;
+}
+
 interface Question {
   id: string
+  customId?: string // ID personalizado opcional
   text: string
   type: "multiple_choice" | "checkbox" | "text" | "scale" | "grid" | "dropdown" | "section"
   required: boolean
   options?: string[]
   rows?: string[]
   columns?: string[]
-  conditional?: any
+  conditional?: ConditionalRule
   description?: string
 }
 
@@ -35,46 +45,94 @@ interface FormData {
   questions: Question[]
 }
 
-function renderConditional(conditional: any, questions: any[]) {
+function renderConditional(conditional: ConditionalRule, questions: Question[]) {
   if (!conditional) return null
-  const dependeDe = questions.find(q => q.id === conditional.dependsOn)
-  const dependeDeText = dependeDe ? `a resposta da questão "${dependeDe.text}"` : `uma resposta anterior`
-  const conds = Array.isArray(conditional.conditions) ? conditional.conditions : []
-  const op = conditional.operator === "AND" ? "e" : "ou"
-  const condText = conds.map((c: any) => {
-    let tipo = c.type === "equals" ? "for igual a" : c.type
-    return `${tipo} "${c.value}"`
-  }).join(` ${op} `)
-  return (
-    <div className="mt-2 text-xs text-muted-foreground">
-      <b>Condicional:</b> Esta questão só aparece se {dependeDeText} {condText}.
-    </div>
-  )
+  
+  try {
+    // Resolver o ID da questão dependente
+    const resolvedId = resolveQuestionId(conditional.dependsOn, questions);
+    const dependeDe = questions.find(q => q.id === resolvedId);
+    const dependeDeText = dependeDe ? `"${dependeDe.text}"` : `uma questão anterior`;
+    
+    const conds = conditional.conditions || [];
+    const op = conditional.operator === "AND" ? "E" : "OU";
+    const condText = conds.map((c) => {
+      const tipo = c.type === "equals" ? "for igual a" : "contiver";
+      return `${tipo} "${c.value}"`;
+    }).join(` ${op} `);
+    
+    return (
+      <div className="mt-2 p-2 text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 rounded border-l-2 border-blue-300">
+        <span className="font-medium">Condicional:</span> Esta questão aparece se {dependeDeText} {condText}.
+      </div>
+    );
+  } catch (error) {
+    console.error("Erro ao renderizar condicional:", error);
+    return (
+      <div className="mt-2 p-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 rounded border-l-2 border-red-300">
+        <span className="font-medium">Erro:</span> Configuração de condicional inválida.
+      </div>
+    );
+  }
 }
 
-function shouldShowQuestion(question: any, responses: Record<string, any>): boolean {
+/**
+ * Resolve um ID de questão para o ID interno do banco
+ * Tenta customId primeiro, depois id interno
+ */
+function resolveQuestionId(targetId: string, questions: Question[]): string {
+  // Busca por customId primeiro
+  const byCustomId = questions.find(q => q.customId === targetId);
+  if (byCustomId) return byCustomId.id;
+  
+  // Se não encontrar, tenta por id interno
+  const byId = questions.find(q => q.id === targetId);
+  if (byId) return byId.id;
+  
+  // Se não encontrar nenhum, retorna o próprio ID
+  return targetId;
+}
+
+function shouldShowQuestion(question: Question, responses: Record<string, any>, allQuestions: Question[]): boolean {
   if (!question.conditional) return true;
-  const { dependsOn, operator, conditions } = question.conditional;
-  const dependentValue = responses[dependsOn];
-  if (dependentValue === undefined) return false;
-  const checkCondition = (condition: {type: string, value: string}): boolean => {
-    if (condition.type === "equals") {
-      if (Array.isArray(dependentValue)) {
-        return dependentValue.map(String).includes(condition.value);
-      }
-      return String(dependentValue) === condition.value;
-    } else if (condition.type === "contains") {
-      if (Array.isArray(dependentValue)) {
-        return dependentValue.map(String).some(v => v.includes(condition.value));
-      }
-      return String(dependentValue).includes(condition.value);
+  
+  try {
+    const { dependsOn, operator, conditions } = question.conditional;
+    
+    // CORREÇÃO CRÍTICA: Resolver o ID correto para buscar a resposta
+    const resolvedId = resolveQuestionId(dependsOn, allQuestions);
+    const dependentValue = responses[resolvedId];
+    
+    // Debug temporário para verificar resolução de IDs
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Condicional Debug] dependsOn: ${dependsOn}, resolvedId: ${resolvedId}, hasValue: ${dependentValue !== undefined}`);
     }
-    return false;
-  };
-  if (operator === "AND") {
-    return conditions.every(checkCondition);
-  } else {
-    return conditions.some(checkCondition);
+    
+    if (dependentValue === undefined) return false;
+    
+    const checkCondition = (condition: {type: "equals" | "contains", value: string}): boolean => {
+      if (condition.type === "equals") {
+        if (Array.isArray(dependentValue)) {
+          return dependentValue.map(String).includes(condition.value);
+        }
+        return String(dependentValue) === condition.value;
+      } else if (condition.type === "contains") {
+        if (Array.isArray(dependentValue)) {
+          return dependentValue.map(String).some(v => v.includes(condition.value));
+        }
+        return String(dependentValue).includes(condition.value);
+      }
+      return false;
+    };
+    
+    if (operator === "AND") {
+      return conditions.every(checkCondition);
+    } else {
+      return conditions.some(checkCondition);
+    }
+  } catch (error) {
+    console.error("Erro ao verificar condicional:", error, question.conditional);
+    return true; // Em caso de erro, mostra a questão
   }
 }
 
@@ -177,7 +235,7 @@ export default function ResponderAvaliacaoPage() {
         <div className="space-y-4">
           {formData.questions.map((question, index) => {
             const type = (question.type || "").toLowerCase();
-            if (!shouldShowQuestion(question, responses)) return null;
+            if (!shouldShowQuestion(question, responses, formData.questions)) return null;
             const realIndex = formData.questions.slice(0, index).filter((q: any) => (q.type || "").toLowerCase() !== "section").length;
             if (type === "section") {
               const section = question as Question & { description?: string };
@@ -206,34 +264,40 @@ export default function ResponderAvaliacaoPage() {
                         value={responses[question.id]}
                         className="space-y-2"
                       >
-                        {Array.isArray(question.options) && question.options.map((option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                            <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
-                          </div>
-                        ))}
+                        {Array.isArray(question.options) && question.options
+                          .filter(option => option.trim() !== "") // Remove opções vazias
+                          .map((option) => (
+                            <div key={option} className="flex items-center space-x-2">
+                              <RadioGroupItem value={option} id={`${question.id}-${option}`} />
+                              <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
+                            </div>
+                          ))
+                        }
                       </RadioGroup>
                     )}
                     {type === "checkbox" && (
                       <div className="space-y-2">
-                        {Array.isArray(question.options) && question.options.map((option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${question.id}-${option}`}
-                              checked={responses[question.id]?.includes(option)}
-                              onCheckedChange={(checked) => {
-                                const currentValues = responses[question.id] || []
-                                handleResponseChange(
-                                  question.id,
-                                  checked
-                                    ? [...currentValues, option]
-                                    : currentValues.filter((v: string) => v !== option)
-                                )
-                              }}
-                            />
-                            <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
-                          </div>
-                        ))}
+                        {Array.isArray(question.options) && question.options
+                          .filter(option => option.trim() !== "") // Remove opções vazias
+                          .map((option) => (
+                            <div key={option} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${question.id}-${option}`}
+                                checked={responses[question.id]?.includes(option)}
+                                onCheckedChange={(checked) => {
+                                  const currentValues = responses[question.id] || []
+                                  handleResponseChange(
+                                    question.id,
+                                    checked
+                                      ? [...currentValues, option]
+                                      : currentValues.filter((v: string) => v !== option)
+                                  )
+                                }}
+                              />
+                              <Label htmlFor={`${question.id}-${option}`} className="text-sm">{option}</Label>
+                            </div>
+                          ))
+                        }
                       </div>
                     )}
                     {type === "text" && (
@@ -275,11 +339,14 @@ export default function ResponderAvaliacaoPage() {
                           <SelectValue placeholder="Selecione uma opção" />
                         </SelectTrigger>
                         <SelectContent>
-                          {Array.isArray(question.options) && question.options.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
+                          {Array.isArray(question.options) && question.options
+                            .filter(option => option.trim() !== "") // Remove opções vazias
+                            .map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          }
                         </SelectContent>
                       </Select>
                     )}
