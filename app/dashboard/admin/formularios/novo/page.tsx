@@ -125,17 +125,18 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     }
     
     return {
-    title: "",
-    description: "",
-    category: "",
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-    estimatedTime: "",
-    generatesCertificate: false,
-    certificateHours: "",
-    status: "ACTIVE",
-    questions: [] as Question[],
-  })
+      title: "",
+      description: "",
+      category: "",
+      startDate: null as Date | null,
+      endDate: null as Date | null,
+      estimatedTime: "",
+      generatesCertificate: false,
+      certificateHours: "",
+      status: "ACTIVE",
+      questions: [] as Question[],
+    };
+  });
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: "",
     type: "multiple_choice",
@@ -225,8 +226,8 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     reorderedQuestions[index - 1] = temp;
     
     // Atualizar campo order para manter consistência
-    reorderedQuestions.forEach((q: Question, idx: number) => {
-      q.order = idx;
+    reorderedQuestions.forEach((q, idx) => {
+      (q as Question).order = idx;
     });
     
     setFormData({
@@ -243,8 +244,8 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     reorderedQuestions[index + 1] = temp;
     
     // Atualizar campo order para manter consistência
-    reorderedQuestions.forEach((q: Question, idx: number) => {
-      q.order = idx;
+    reorderedQuestions.forEach((q, idx) => {
+      (q as Question).order = idx;
     });
     
     setFormData({
