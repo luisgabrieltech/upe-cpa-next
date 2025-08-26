@@ -601,52 +601,54 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
           const realIndex = formData.questions.slice(0, index).filter(q => q.type !== "section").length;
           if (question.type === "section") {
             return (
-              <div key={question.id} className="relative py-4 px-4 bg-muted/40 rounded border mb-2 group hover:shadow-sm transition-shadow">
-                <div className="pr-20">
-                  <div className="font-bold text-upe-blue text-lg">{question.text || "(Seção sem título)"}</div>
-                  {question.description && <div className="text-muted-foreground text-sm mt-1">{question.description}</div>}
-                </div>
-                
-                {/* Botões de ação para seções */}
-                <div className="absolute top-4 right-4 flex flex-col gap-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background/80 backdrop-blur-sm shadow-sm"
-                    onClick={() => moveQuestionUp(index)}
-                    disabled={index === 0}
-                    title="Mover para cima"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background/80 backdrop-blur-sm shadow-sm"
-                    onClick={() => moveQuestionDown(index)}
-                    disabled={index === formData.questions.length - 1}
-                    title="Mover para baixo"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 backdrop-blur-sm shadow-sm"
-                    onClick={() => editQuestion(question.id)}
-                    title="Editar seção"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-upe-red hover:text-upe-red/90 hover:bg-upe-red/10 backdrop-blur-sm shadow-sm"
-                    onClick={() => removeQuestion(question.id)}
-                    title="Remover seção"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"/><path d="M19 6l-1.5 16.5a2 2 0 0 1-2 1.5h-7a2 2 0 0 1-2-1.5L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                  </Button>
+              <div key={question.id} className="py-4 px-4 bg-muted/40 rounded border mb-2 hover:shadow-sm transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 pr-4">
+                    <div className="font-bold text-upe-blue text-lg">{question.text || "(Seção sem título)"}</div>
+                    {question.description && <div className="text-muted-foreground text-sm mt-1">{question.description}</div>}
+                  </div>
+                  
+                  {/* Botões horizontais para seções */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => moveQuestionUp(index)}
+                      disabled={index === 0}
+                      title="Mover para cima"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => moveQuestionDown(index)}
+                      disabled={index === formData.questions.length - 1}
+                      title="Mover para baixo"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => editQuestion(question.id)}
+                      title="Editar seção"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-upe-red hover:text-upe-red/90 hover:bg-upe-red/10"
+                      onClick={() => removeQuestion(question.id)}
+                      title="Remover seção"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"/><path d="M19 6l-1.5 16.5a2 2 0 0 1-2 1.5h-7a2 2 0 0 1-2-1.5L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
@@ -654,11 +656,11 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
           return (
             <div 
               key={question.id}
-              className="relative p-4 border rounded-md group hover:shadow-sm transition-shadow"
+              className="p-4 border rounded-md hover:shadow-sm transition-shadow"
             >
-              {/* Conteúdo principal da questão */}
-              <div className="pr-20">
-                <div className="mb-2">
+              {/* Cabeçalho com título e botões horizontais */}
+              <div className="flex items-start justify-between mb-3 sticky top-0 bg-background/95 backdrop-blur-sm z-10 -m-4 p-4 rounded-t-md">
+                <div className="flex-1 pr-4">
                   <p className="font-medium">
                     {realIndex + 1}. {question.text}
                     {question.id && (
@@ -708,52 +710,52 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Botões de ação com posicionamento sticky */}
-              <div className="absolute top-4 right-4 flex flex-col gap-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background/80 backdrop-blur-sm shadow-sm"
-                  onClick={() => moveQuestionUp(index)}
-                  disabled={index === 0}
-                  title="Mover para cima"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background/80 backdrop-blur-sm shadow-sm"
-                  onClick={() => moveQuestionDown(index)}
-                  disabled={index === formData.questions.length - 1}
-                  title="Mover para baixo"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 backdrop-blur-sm shadow-sm"
-                  onClick={() => editQuestion(question.id)}
-                  title="Editar questão"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-upe-red hover:text-upe-red/90 hover:bg-upe-red/10 backdrop-blur-sm shadow-sm"
-                  onClick={() => removeQuestion(question.id)}
-                  title="Remover questão"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                {/* Botões horizontais sempre visíveis */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => moveQuestionUp(index)}
+                    disabled={index === 0}
+                    title="Mover para cima"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => moveQuestionDown(index)}
+                    disabled={index === formData.questions.length - 1}
+                    title="Mover para baixo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() => editQuestion(question.id)}
+                    title="Editar questão"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-upe-red hover:text-upe-red/90 hover:bg-upe-red/10"
+                    onClick={() => removeQuestion(question.id)}
+                    title="Remover questão"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               {/* Conteúdo adicional da questão */}
-              <div className="pr-20">
+              <div>
                 {(question.type === "multiple_choice" || question.type === "checkbox") && (
                   <div className="mt-2 space-y-1">
                     {question.options.map((option, optIndex) => (
