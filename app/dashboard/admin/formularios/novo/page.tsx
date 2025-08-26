@@ -659,7 +659,7 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
               className="p-4 border rounded-md hover:shadow-sm transition-shadow"
             >
               {/* Cabeçalho com título e botões horizontais */}
-              <div className="flex items-start justify-between mb-3 sticky top-0 bg-background/95 backdrop-blur-sm z-10 -m-4 p-4 rounded-t-md">
+              <div className="flex items-start justify-between mb-3 sticky top-0 bg-background border-b border-border/20 pb-2">
                 <div className="flex-1 pr-4">
                   <p className="font-medium">
                     {realIndex + 1}. {question.text}
