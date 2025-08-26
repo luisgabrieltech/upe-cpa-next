@@ -661,12 +661,16 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
               {/* Cabeçalho com título e botões horizontais */}
               <div className="flex items-start justify-between mb-3 sticky top-0 bg-background/95 backdrop-blur-sm z-10 rounded-t-md px-2 py-1">
                 <div className="flex-1 pr-4 min-w-0">
-                  <p className="font-medium">
-                    {realIndex + 1}. {question.text}
+                  <div>
+                    <p className="font-medium break-words">
+                      {realIndex + 1}. {question.text}
+                    </p>
                     {question.id && (
-                      <span className="ml-2 text-xs text-muted-foreground">[{question.id}]</span>
+                      <p className="text-xs text-muted-foreground mt-1 break-all opacity-70">
+                        ID: {question.id}
+                      </p>
                     )}
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {question.type === "multiple_choice" && "Escolha única"}
                     {question.type === "checkbox" && "Múltipla escolha"}
