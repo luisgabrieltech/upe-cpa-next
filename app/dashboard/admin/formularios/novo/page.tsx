@@ -601,9 +601,9 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
           const realIndex = formData.questions.slice(0, index).filter(q => q.type !== "section").length;
           if (question.type === "section") {
             return (
-              <div key={question.id} className="py-4 px-4 bg-muted/40 rounded border mb-2 hover:shadow-sm transition-shadow">
+              <div key={question.id} className="p-4 bg-muted/40 rounded border mb-2 hover:shadow-sm transition-shadow">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1 pr-4">
+                  <div className="flex-1 pr-4 min-w-0">
                     <div className="font-bold text-upe-blue text-lg">{question.text || "(Seção sem título)"}</div>
                     {question.description && <div className="text-muted-foreground text-sm mt-1">{question.description}</div>}
                   </div>
@@ -659,8 +659,8 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
               className="p-4 border rounded-md hover:shadow-sm transition-shadow"
             >
               {/* Cabeçalho com título e botões horizontais */}
-              <div className="flex items-start justify-between mb-3 sticky top-0 bg-background border-b border-border/20 pb-2">
-                <div className="flex-1 pr-4">
+              <div className="flex items-start justify-between mb-3 sticky top-0 bg-background/95 backdrop-blur-sm z-10 rounded-t-md px-2 py-1">
+                <div className="flex-1 pr-4 min-w-0">
                   <p className="font-medium">
                     {realIndex + 1}. {question.text}
                     {question.id && (
