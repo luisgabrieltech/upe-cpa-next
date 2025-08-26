@@ -25,14 +25,22 @@ export async function GET(req: Request) {
     if (id) {
       const form = await prisma.form.findUnique({
         where: { id },
-        include: { questions: true, createdBy: { select: { name: true, email: true } }, responses: true },
+        include: { 
+          questions: { 
+            orderBy: { order: 'asc' } 
+          }, 
+          createdBy: { select: { name: true, email: true } }, 
+          responses: true 
+        },
       })
       if (!form) return NextResponse.json({ message: "Formulário não encontrado" }, { status: 404 })
       return NextResponse.json(form)
     }
     const forms = await prisma.form.findMany({
       include: {
-        questions: true,
+        questions: { 
+          orderBy: { order: 'asc' } 
+        },
         createdBy: { select: { name: true, email: true } },
         responses: true,
       },

@@ -39,6 +39,7 @@ interface Question {
   rows?: string[]
   columns?: string[]
   description?: string
+  order?: number
   conditional?: {
     dependsOn: string
     operator: "OR" | "AND"
@@ -75,6 +76,7 @@ function normalizeQuestion(q: any): Question {
     rows: Array.isArray(q.rows) ? q.rows : [],
     columns: Array.isArray(q.columns) ? q.columns : [],
     description: q.description,
+    order: q.order || 0, // Preservar ordem do banco de dados
     conditional: q.conditional
       ? {
           dependsOn: q.conditional.dependsOn || "",
@@ -93,20 +95,36 @@ function normalizeQuestion(q: any): Question {
 export default function NovoFormularioPage({ initialData }: NovoFormularioPageProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("info")
-  const [formData, setFormData] = useState(() => initialData ? {
-    title: initialData.title || "",
-    description: initialData.description || "",
-    category: initialData.category || "",
-    startDate: initialData.startDate ? new Date(initialData.startDate) : null,
-    endDate: initialData.deadline ? new Date(initialData.deadline) : null,
-    estimatedTime: initialData.estimatedTime ?? "",
-    generatesCertificate: initialData.generatesCertificate ?? false,
-    certificateHours: initialData.certificateHours ?? "",
-    status: initialData.status || "ACTIVE",
-    questions: Array.isArray(initialData.questions)
-      ? initialData.questions.map(normalizeQuestion)
-      : [],
-  } : {
+  const [formData, setFormData] = useState(() => {
+    if (initialData) {
+      // Log de debug para verificar questões carregadas
+      console.log('📥 Questões carregadas do banco:', initialData.questions?.map((q: any, idx: number) => ({
+        index: idx,
+        id: q.id,
+        customId: q.customId,
+        text: q.text?.substring(0, 30) + '...',
+        order: q.order
+      })));
+      
+      return {
+        title: initialData.title || "",
+        description: initialData.description || "",
+        category: initialData.category || "",
+        startDate: initialData.startDate ? new Date(initialData.startDate) : null,
+        endDate: initialData.deadline ? new Date(initialData.deadline) : null,
+        estimatedTime: initialData.estimatedTime ?? "",
+        generatesCertificate: initialData.generatesCertificate ?? false,
+        certificateHours: initialData.certificateHours ?? "",
+        status: initialData.status || "ACTIVE",
+        questions: Array.isArray(initialData.questions)
+          ? initialData.questions
+              .map(normalizeQuestion)
+              .sort((a: Question, b: Question) => (a.order || 0) - (b.order || 0)) // Ordenação de segurança
+          : [],
+      };
+    }
+    
+    return {
     title: "",
     description: "",
     category: "",
@@ -206,6 +224,11 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     reorderedQuestions[index] = reorderedQuestions[index - 1];
     reorderedQuestions[index - 1] = temp;
     
+    // Atualizar campo order para manter consistência
+    reorderedQuestions.forEach((q: Question, idx: number) => {
+      q.order = idx;
+    });
+    
     setFormData({
       ...formData,
       questions: reorderedQuestions
@@ -218,6 +241,11 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
     const temp = reorderedQuestions[index];
     reorderedQuestions[index] = reorderedQuestions[index + 1];
     reorderedQuestions[index + 1] = temp;
+    
+    // Atualizar campo order para manter consistência
+    reorderedQuestions.forEach((q: Question, idx: number) => {
+      q.order = idx;
+    });
     
     setFormData({
       ...formData,
@@ -528,6 +556,14 @@ export default function NovoFormularioPage({ initialData }: NovoFormularioPagePr
       alert("Por favor, insira um título para o formulário");
       return;
     }
+
+    // Log de debug para verificar ordem das questões
+    console.log('🔍 Salvando questões na ordem:', formData.questions.map((q, idx) => ({
+      index: idx,
+      id: q.id,
+      text: q.text.substring(0, 30) + '...',
+      order: q.order || idx
+    })));
 
     const dataToSend = {
       ...formData,
