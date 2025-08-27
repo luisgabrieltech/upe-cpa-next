@@ -26,7 +26,7 @@ export default function DashboardPage() {
       const formsData = formsRes.ok ? await formsRes.json() : []
       setForms(formsData)
       // Buscar respostas do usuário
-      const respRes = await fetch(getApiUrl('responses?userId=' + session?.user?.id))
+      const respRes = await fetch(getApiUrl('responses?user=me'))
       const respData = respRes.ok ? await respRes.json() : []
       setResponses(respData)
       setLoading(false)
