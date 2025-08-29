@@ -190,9 +190,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">{session?.user?.name}</span>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-sm font-medium truncate">{session?.user?.name}</span>
+                <span className="text-xs text-muted-foreground truncate">
                   {session?.user?.email}
                 </span>
               </div>
@@ -302,9 +302,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{session?.user?.name}</span>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-sm font-medium truncate">{session?.user?.name}</span>
+                    <span className="text-xs text-muted-foreground truncate">
                       {session?.user?.email}
                     </span>
                   </div>
