@@ -37,8 +37,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getApiUrl, getImageUrl } from "@/lib/api-utils"
+import { FUNCTIONAL_ROLES_OPTIONS } from "@/lib/user-utils"
 
 export default function AdminUsuariosPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -66,6 +68,10 @@ export default function AdminUsuariosPage() {
   const [roleLoading, setRoleLoading] = useState(false)
   const [roleError, setRoleError] = useState<string | null>(null)
   const [selectedRole, setSelectedRole] = useState<string>("")
+  const [isFunctionalRolesDialogOpen, setIsFunctionalRolesDialogOpen] = useState(false)
+  const [selectedFunctionalRoles, setSelectedFunctionalRoles] = useState<string[]>([])
+  const [functionalRolesLoading, setFunctionalRolesLoading] = useState(false)
+  const [functionalRolesError, setFunctionalRolesError] = useState<string | null>(null)
 
   // Função para buscar usuários (fora do useEffect)
   const fetchUsers = async () => {
@@ -119,6 +125,14 @@ export default function AdminUsuariosPage() {
     setSelectedRole(user.role)
     setIsRoleDialogOpen(true)
     setRoleError(null)
+  }
+
+  // Função para abrir o diálogo de cargos funcionais
+  const handleFunctionalRolesClick = (user: any) => {
+    setSelectedUser(user)
+    setSelectedFunctionalRoles(user.extraData?.functionalRoles || [])
+    setIsFunctionalRolesDialogOpen(true)
+    setFunctionalRolesError(null)
   }
 
   // Função para confirmar a exclusão
@@ -238,6 +252,36 @@ export default function AdminUsuariosPage() {
       setRoleError("Erro ao alterar cargo.")
     } finally {
       setRoleLoading(false)
+    }
+  }
+
+  // Função para confirmar alteração de cargos funcionais
+  const confirmFunctionalRolesChange = async () => {
+    if (!selectedUser) return
+    setFunctionalRolesLoading(true)
+    setFunctionalRolesError(null)
+    try {
+      const res = await fetch(getApiUrl(`user/${selectedUser.id}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          extraData: {
+            ...selectedUser.extraData,
+            functionalRoles: selectedFunctionalRoles
+          }
+        }),
+      })
+      if (res.ok) {
+        await fetchUsers()
+        setIsFunctionalRolesDialogOpen(false)
+      } else {
+        const data = await res.json()
+        setFunctionalRolesError(data.message || "Erro ao alterar cargos funcionais.")
+      }
+    } catch (error) {
+      setFunctionalRolesError("Erro ao alterar cargos funcionais.")
+    } finally {
+      setFunctionalRolesLoading(false)
     }
   }
 
@@ -394,6 +438,10 @@ export default function AdminUsuariosPage() {
                                 <DropdownMenuItem onClick={() => handleRoleClick(user)}>
                                   <User className="mr-2 h-4 w-4 text-upe-blue" />
                                   <span>Definir Cargo</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleFunctionalRolesClick(user)}>
+                                  <User className="mr-2 h-4 w-4 text-purple-600" />
+                                  <span>Gerenciar Cargos Funcionais</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 {user.active ? (
@@ -620,6 +668,52 @@ export default function AdminUsuariosPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isFunctionalRolesDialogOpen} onOpenChange={setIsFunctionalRolesDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Gerenciar Cargos Funcionais</DialogTitle>
+              <DialogDescription>
+                Escolha os cargos funcionais para o usuário <b>{selectedUser?.name}</b>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="grid grid-cols-1 gap-2 border rounded-lg p-3 bg-muted/20">
+                {FUNCTIONAL_ROLES_OPTIONS.map((role) => (
+                  <label key={role.value} className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded">
+                    <Checkbox
+                      checked={selectedFunctionalRoles.includes(role.value)}
+                      onCheckedChange={checked => {
+                        if (checked) {
+                          setSelectedFunctionalRoles([...selectedFunctionalRoles, role.value])
+                        } else {
+                          setSelectedFunctionalRoles(selectedFunctionalRoles.filter(r => r !== role.value))
+                        }
+                      }}
+                      id={`functional-role-${role.value}`}
+                    />
+                    <span className="flex-1">{role.label}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {selectedFunctionalRoles.length === 0 
+                  ? "⚠️ Usuário não terá acesso a nenhum formulário específico" 
+                  : `✅ Usuário terá acesso a formulários para: ${FUNCTIONAL_ROLES_OPTIONS.filter(r => selectedFunctionalRoles.includes(r.value)).map(r => r.label).join(", ")}`
+                }
+              </div>
+              {functionalRolesError && <div className="text-red-600 text-sm">{functionalRolesError}</div>}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsFunctionalRolesDialogOpen(false)} disabled={functionalRolesLoading}>
+                Cancelar
+              </Button>
+              <Button className="bg-upe-blue text-white" onClick={confirmFunctionalRolesChange} disabled={functionalRolesLoading}>
+                {functionalRolesLoading ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   )
@@ -639,28 +733,20 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 function FunctionalRolesBadges({ user }: { user: any }) {
-  if (!user.extraData || !user.extraData.functionalRoles) {
+  if (!user.extraData || !user.extraData.functionalRoles || user.extraData.functionalRoles.length === 0) {
     return <span className="text-muted-foreground text-sm">Não informado</span>;
   }
 
-  const getFunctionalRoleLabel = (role: string) => {
-    switch (role) {
-      case "DOCENTE": return "Docente";
-      case "DISCENTE": return "Discente";
-      case "EGRESSO": return "Egresso";
-      case "TECNICO_UNIDADES_ENSINO": return "Téc. Unidades";
-      case "TECNICO_COMPLEXO_HOSPITALAR": return "Téc. Hospital";
-      default: return role;
-    }
-  };
-
   return (
     <div className="flex flex-wrap gap-1">
-      {user.extraData.functionalRoles.map((role: string) => (
-        <Badge key={role} variant="secondary" className="text-xs">
-          {getFunctionalRoleLabel(role)}
-        </Badge>
-      ))}
+      {user.extraData.functionalRoles.map((role: string) => {
+        const roleLabel = FUNCTIONAL_ROLES_OPTIONS.find(r => r.value === role)?.label || role
+        return (
+          <Badge key={role} variant="secondary" className="text-xs">
+            {roleLabel}
+          </Badge>
+        )
+      })}
     </div>
   );
 }

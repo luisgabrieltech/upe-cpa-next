@@ -5,10 +5,11 @@ export async function PATCH(req: NextRequest) {
   try {
     const id = req.nextUrl.pathname.split("/").pop()
     console.log("ID extraído para update:", id)
-    const { active, role } = await req.json()
+    const { active, role, extraData } = await req.json()
     const dataToUpdate: any = {}
     if (typeof active === 'boolean') dataToUpdate.active = active
-    if (role && ["ADMIN", "USER"].includes(role)) dataToUpdate.role = role
+    if (role && ["ADMIN", "CSA", "USER"].includes(role)) dataToUpdate.role = role
+    if (extraData !== undefined) dataToUpdate.extraData = extraData
     if (Object.keys(dataToUpdate).length === 0) {
       return NextResponse.json({ message: "Nenhum dado para atualizar" }, { status: 400 })
     }
@@ -21,6 +22,7 @@ export async function PATCH(req: NextRequest) {
         email: true,
         role: true,
         active: true,
+        extraData: true,
         createdAt: true,
         updatedAt: true,
       },
