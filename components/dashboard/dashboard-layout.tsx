@@ -49,7 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     const fetchPending = async () => {
       if (!session?.user?.id) return;
-      const formsRes = await fetch(getApiUrl('forms?available=true'))
+      const formsRes = await fetch(getApiUrl('forms')) // API já filtra por roles funcionais
       const formsData = formsRes.ok ? await formsRes.json() : []
       const respRes = await fetch(getApiUrl('responses?user=me'))
       const respData = respRes.ok ? await respRes.json() : []

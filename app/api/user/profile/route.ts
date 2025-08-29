@@ -26,7 +26,16 @@ export async function GET() {
       return NextResponse.json({ message: "Usuário não encontrado" }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    // Extrair functional roles do extraData
+    const functionalRoles = user.extraData?.functionalRoles || []
+
+    // Retornar usuário com functional roles no nível raiz
+    const userWithFunctionalRoles = {
+      ...user,
+      functionalRoles
+    }
+
+    return NextResponse.json(userWithFunctionalRoles)
   } catch (error) {
     console.error("Erro ao buscar perfil:", error)
     return NextResponse.json({ message: "Erro ao buscar perfil" }, { status: 500 })
@@ -58,7 +67,16 @@ export async function PUT(req: Request) {
       },
     })
 
-    return NextResponse.json(user)
+    // Extrair functional roles do extraData
+    const functionalRoles = user.extraData?.functionalRoles || []
+
+    // Retornar usuário com functional roles no nível raiz
+    const userWithFunctionalRoles = {
+      ...user,
+      functionalRoles
+    }
+
+    return NextResponse.json(userWithFunctionalRoles)
   } catch (error) {
     console.error("Erro ao atualizar perfil:", error)
     return NextResponse.json({ message: "Erro ao atualizar perfil" }, { status: 500 })

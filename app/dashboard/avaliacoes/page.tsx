@@ -11,50 +11,86 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { getApiUrl } from "@/lib/api-utils"
 import { routes } from "@/lib/routes"
+import { getUserFunctionalRoles, canUserViewForm, FUNCTIONAL_ROLES_OPTIONS } from "@/lib/user-utils"
 
 export default function AvaliacoesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [forms, setForms] = useState<any[]>([])
   const [userResponses, setUserResponses] = useState<any[]>([])
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const { data: session } = useSession()
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!session?.user?.id) return
+      
       setLoading(true)
-      const [formsRes, responsesRes] = await Promise.all([
-        fetch(getApiUrl('forms')),
+      const [formsRes, responsesRes, profileRes] = await Promise.all([
+        fetch(getApiUrl('forms')), // API já filtra por roles funcionais
         fetch(getApiUrl('responses?user=me')),
+        fetch(getApiUrl('user/profile')),
       ])
+      
       if (formsRes.ok) {
         setForms(await formsRes.json())
       }
       if (responsesRes.ok) {
         setUserResponses(await responsesRes.json())
       }
+      if (profileRes.ok) {
+        setUserProfile(await profileRes.json())
+      }
+      
       setLoading(false)
     }
     fetchData()
-  }, [])
+  }, [session?.user?.id])
 
   // IDs dos formulários já respondidos pelo usuário
   const respondedFormIds = Array.from(new Set(userResponses.map((r: any) => r.formId)))
 
-  const filteredAvailable = forms.filter(
-    (form) =>
-      form.externalStatus !== "HIDDEN" &&
-      !respondedFormIds.includes(form.id) &&
-      (form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        form.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+  const filteredAvailable = forms.filter((form) => {
+    // 1. Status deve ser AVAILABLE
+    if (form.externalStatus !== "AVAILABLE") return false
+    
+    // 2. Não pode ter respondido
+    if (respondedFormIds.includes(form.id)) return false
+    
+    // 3. Verificar roles funcionais (dupla segurança - API já filtra, mas validamos localmente também)
+    if (userProfile && form.visibleToRoles && form.visibleToRoles.length > 0) {
+      const userFunctionalRoles = getUserFunctionalRoles(userProfile.extraData)
+      const hasPermission = canUserViewForm(userFunctionalRoles, form.visibleToRoles)
+      if (!hasPermission) return false
+    }
+    
+    // 4. Filtro de busca
+    return (
+      form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      form.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })
 
-  const filteredCompleted = forms.filter(
-    (form) =>
-      form.externalStatus !== "HIDDEN" &&
-      respondedFormIds.includes(form.id) &&
-      (form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        form.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+  const filteredCompleted = forms.filter((form) => {
+    // 1. Status não pode ser HIDDEN
+    if (form.externalStatus === "HIDDEN") return false
+    
+    // 2. Deve ter respondido
+    if (!respondedFormIds.includes(form.id)) return false
+    
+    // 3. Verificar roles funcionais (dupla segurança)
+    if (userProfile && form.visibleToRoles && form.visibleToRoles.length > 0) {
+      const userFunctionalRoles = getUserFunctionalRoles(userProfile.extraData)
+      const hasPermission = canUserViewForm(userFunctionalRoles, form.visibleToRoles)
+      if (!hasPermission) return false
+    }
+    
+    // 4. Filtro de busca
+    return (
+      form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      form.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })
 
   return (
     <DashboardLayout>
@@ -63,6 +99,19 @@ export default function AvaliacoesPage() {
           <div>
             <h1 className="text-2xl font-bold text-upe-blue">Avaliações</h1>
             <p className="text-muted-foreground">Gerencie e responda suas avaliações</p>
+            {userProfile && userProfile.functionalRoles && userProfile.functionalRoles.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                <span className="text-xs text-muted-foreground">Suas roles:</span>
+                {userProfile.functionalRoles.map((role: string) => {
+                  const roleLabel = FUNCTIONAL_ROLES_OPTIONS.find(r => r.value === role)?.label || role
+                  return (
+                    <span key={role} className="text-xs bg-upe-blue/10 text-upe-blue px-2 py-1 rounded">
+                      {roleLabel}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
           </div>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -140,8 +189,18 @@ export default function AvaliacoesPage() {
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium">Nenhuma avaliação encontrada</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Não há avaliações disponíveis que correspondam à sua busca.
+                    {searchQuery 
+                      ? "Não há avaliações disponíveis que correspondam à sua busca."
+                      : "Não há avaliações disponíveis para suas roles funcionais ou todas já foram respondidas."
+                    }
                   </p>
+                  {userProfile && userProfile.functionalRoles && userProfile.functionalRoles.length > 0 && !searchQuery && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Você tem acesso a formulários para: {userProfile.functionalRoles.map((role: string) => 
+                        FUNCTIONAL_ROLES_OPTIONS.find(r => r.value === role)?.label || role
+                      ).join(", ")}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}

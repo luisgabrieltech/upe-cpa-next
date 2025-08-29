@@ -52,10 +52,11 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ColumnDef } from "@/components/ui/table"
+
 import { useRouter } from "next/navigation"
 import { getApiUrl } from "@/lib/api-utils"
 import { routes } from "@/lib/routes"
+import { FUNCTIONAL_ROLES_OPTIONS } from "@/lib/user-utils"
 
 export default function AdminFormulariosPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -67,22 +68,14 @@ export default function AdminFormulariosPage() {
   const [visibilityFormId, setVisibilityFormId] = useState<string | null>(null)
   const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
-  const [selectedExternalStatus, setSelectedExternalStatus] = useState<string>("")
+  const [selectedStatus, setSelectedStatus] = useState<string>("HIDDEN")
   const [deleteConfirmInput, setDeleteConfirmInput] = useState("")
   const [deleteFormName, setDeleteFormName] = useState("")
   const [statusType, setStatusType] = useState<'internal' | 'external'>('internal')
   const router = useRouter()
 
-  const roles = [
-    { value: "DOCENTE", label: "Docente" },
-    { value: "DISCENTE", label: "Discente" },
-    { value: "EGRESSO", label: "Egresso" },
-    { value: "TEC_ADMIN", label: "Téc. Adm. Ensino" },
-    { value: "TEC_HOSP", label: "Téc. Complexo Hosp." },
-    { value: "ADMIN", label: "Admin" },
-    { value: "USER", label: "Usuário" },
-  ]
+  // Usar roles funcionais da lib
+  const roles = FUNCTIONAL_ROLES_OPTIONS
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -141,8 +134,7 @@ export default function AdminFormulariosPage() {
   const openVisibilityDialog = (form: any) => {
     setVisibilityFormId(form.id)
     setSelectedRoles(form.visibleToRoles || [])
-    setSelectedUserIds(form.visibleToUserIds || [])
-    setSelectedExternalStatus(form.externalStatus || "HIDDEN")
+    setSelectedStatus(form.externalStatus || "HIDDEN")
     setIsVisibilityDialogOpen(true)
   }
 
@@ -161,11 +153,11 @@ export default function AdminFormulariosPage() {
     show: { opacity: 1, y: 0 },
   }
 
-  const columns: ColumnDef<Form>[] = [
+  const columns = [
     {
       accessorKey: "title",
       header: "Título",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const title = row.getValue("title") as string
         return (
           <div className="flex flex-col">
@@ -178,7 +170,7 @@ export default function AdminFormulariosPage() {
     {
       accessorKey: "status",
       header: "Status Interno",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const status = row.getValue("status") as string
         return (
           <Badge variant={
@@ -199,7 +191,7 @@ export default function AdminFormulariosPage() {
     {
       accessorKey: "externalStatus",
       header: "Status Externo",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const status = row.getValue("externalStatus") as string
         return (
           <Badge variant={
@@ -221,7 +213,7 @@ export default function AdminFormulariosPage() {
     {
       accessorKey: "createdAt",
       header: "Criado em",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const createdAt = row.getValue("createdAt") as string
         return createdAt ? format(new Date(createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-"
       },
@@ -229,7 +221,7 @@ export default function AdminFormulariosPage() {
     {
       accessorKey: "deadline",
       header: "Prazo",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const deadline = row.getValue("deadline") as string
         return deadline ? format(new Date(deadline), "dd/MM/yyyy", { locale: ptBR }) : "-"
       },
@@ -237,7 +229,7 @@ export default function AdminFormulariosPage() {
     {
       accessorKey: "estimatedTime",
       header: "Tempo Estimado",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const estimatedTime = row.getValue("estimatedTime") as number
         return estimatedTime ? `${estimatedTime} min` : "-"
       },
@@ -245,14 +237,14 @@ export default function AdminFormulariosPage() {
     {
       accessorKey: "responses",
       header: "Respostas",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const responses = row.getValue("responses") as number
         return responses.toString()
       },
     },
     {
       id: "actions",
-      cell: ({ row }) => {
+      cell: ({ row }: any) => {
         const form = row.original
         return (
           <DropdownMenu>
@@ -492,7 +484,7 @@ export default function AdminFormulariosPage() {
                             <TableCell>{criadoEm}</TableCell>
                             <TableCell>{prazo}</TableCell>
                             <TableCell>{tempoEstimado}</TableCell>
-                            <TableCell>{new Set(form.responses.map(r => r.userId)).size}</TableCell>
+                            <TableCell>{new Set(form.responses.map((r: any) => r.userId)).size}</TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -614,64 +606,56 @@ export default function AdminFormulariosPage() {
             <DialogHeader>
               <DialogTitle>Gerenciar Visibilidade</DialogTitle>
               <DialogDescription>
-                Escolha quem pode visualizar este formulário (roles e/ou usuários específicos)
+                Defina o status e as roles funcionais que podem visualizar este formulário
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-6">
+              {/* Status do Formulário */}
               <div>
-                <label className="block font-medium mb-1">Roles permitidas</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      {selectedRoles.length > 0
-                        ? roles.filter(r => selectedRoles.includes(r.value)).map(r => r.label).join(", ")
-                        : "Selecione as roles"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 p-2">
-                    <div className="flex flex-col gap-1">
-                      {roles.map((role) => (
-                        <label key={role.value} className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox
-                            checked={selectedRoles.includes(role.value)}
-                            onCheckedChange={checked => {
-                              if (checked) {
-                                setSelectedRoles([...selectedRoles, role.value])
-                              } else {
-                                setSelectedRoles(selectedRoles.filter(r => r !== role.value))
-                              }
-                            }}
-                            id={`role-${role.value}`}
-                          />
-                          <span>{role.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <label className="block font-medium mb-1">Usuários permitidos</label>
-                <Input
-                  placeholder="IDs de usuários separados por vírgula"
-                  value={selectedUserIds.join(",")}
-                  onChange={e => setSelectedUserIds(e.target.value.split(",").map(s => s.trim()))}
-                />
-                {/* Em uma versão futura, pode-se implementar autocomplete/busca de usuários */}
-              </div>
-              <div>
-                <label className="block font-medium mb-1">Status Externo</label>
-                <Select value={selectedExternalStatus} onValueChange={setSelectedExternalStatus}>
+                <label className="block font-medium mb-2">Status do Formulário</label>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o status externo" />
+                    <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="AVAILABLE">Disponível</SelectItem>
-                    <SelectItem value="HIDDEN">Oculto</SelectItem>
-                    <SelectItem value="FROZEN">Congelado</SelectItem>
-                    <SelectItem value="SCHEDULED">Agendado</SelectItem>
+                    <SelectItem value="HIDDEN">🙈 Oculto</SelectItem>
+                    <SelectItem value="AVAILABLE">✅ Disponível</SelectItem>
+                    <SelectItem value="FROZEN">🧊 Congelado</SelectItem>
+                    <SelectItem value="SCHEDULED">⏰ Agendado</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Status "Oculto" torna o formulário invisível para todos os usuários
+                </p>
+              </div>
+
+              {/* Roles Funcionais Permitidas */}
+              <div>
+                <label className="block font-medium mb-2">Roles Funcionais Permitidas</label>
+                <div className="grid grid-cols-1 gap-2 border rounded-lg p-3 bg-muted/20">
+                  {roles.map((role) => (
+                    <label key={role.value} className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded">
+                      <Checkbox
+                        checked={selectedRoles.includes(role.value)}
+                        onCheckedChange={checked => {
+                          if (checked) {
+                            setSelectedRoles([...selectedRoles, role.value])
+                          } else {
+                            setSelectedRoles(selectedRoles.filter(r => r !== role.value))
+                          }
+                        }}
+                        id={`role-${role.value}`}
+                      />
+                      <span className="flex-1">{role.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {selectedRoles.length === 0 
+                    ? "⚠️ Se nenhuma role for selecionada, o formulário será público para todos os usuários" 
+                    : `✅ Visível apenas para: ${roles.filter(r => selectedRoles.includes(r.value)).map(r => r.label).join(", ")}`
+                  }
+                </p>
               </div>
             </div>
             <DialogFooter>
@@ -686,8 +670,7 @@ export default function AdminFormulariosPage() {
                   body: JSON.stringify({
                     id: visibilityFormId,
                     visibleToRoles: selectedRoles,
-                    visibleToUserIds: selectedUserIds,
-                    externalStatus: selectedExternalStatus,
+                    status: selectedStatus,
                   }),
                 })
                 if (res.ok) {

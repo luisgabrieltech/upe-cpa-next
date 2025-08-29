@@ -11,35 +11,79 @@ import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { getApiUrl } from "@/lib/api-utils"
 import { routes } from "@/lib/routes"
+import { getUserFunctionalRoles, canUserViewForm, FUNCTIONAL_ROLES_OPTIONS } from "@/lib/user-utils"
 
 export default function DashboardPage() {
   const { data: session } = useSession()
   const [forms, setForms] = useState<any[]>([])
   const [responses, setResponses] = useState<any[]>([])
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!session?.user?.id) return
+      
       setLoading(true)
-      // Buscar formulários disponíveis
-      const formsRes = await fetch(getApiUrl('forms?available=true'))
-      const formsData = formsRes.ok ? await formsRes.json() : []
-      setForms(formsData)
-      // Buscar respostas do usuário
-      const respRes = await fetch(getApiUrl('responses?user=me'))
-      const respData = respRes.ok ? await respRes.json() : []
-      setResponses(respData)
+      const [formsRes, responsesRes, profileRes] = await Promise.all([
+        fetch(getApiUrl('forms')), // API já filtra por roles funcionais automaticamente
+        fetch(getApiUrl('responses?user=me')),
+        fetch(getApiUrl('user/profile')),
+      ])
+      
+      if (formsRes.ok) {
+        setForms(await formsRes.json())
+      }
+      if (responsesRes.ok) {
+        setResponses(await responsesRes.json())
+      }
+      if (profileRes.ok) {
+        setUserProfile(await profileRes.json())
+      }
+      
       setLoading(false)
     }
-    if (session?.user?.id) fetchData()
+    fetchData()
   }, [session?.user?.id])
 
   // IDs dos formulários já respondidos
   const respondedFormIds = new Set(responses.map((r: any) => r.formId))
-  // Pendentes: disponíveis e não respondidos
-  const pendingForms = forms.filter((f: any) => f.externalStatus !== "HIDDEN" && !respondedFormIds.has(f.id))
-  // Concluídas: disponíveis e respondidas
-  const completedForms = forms.filter((f: any) => f.externalStatus !== "HIDDEN" && respondedFormIds.has(f.id))
+  
+  // Pendentes: AVAILABLE e não respondidos (API já filtra por roles funcionais)
+  const pendingForms = forms.filter((form: any) => {
+    // 1. Status deve ser AVAILABLE
+    if (form.externalStatus !== "AVAILABLE") return false
+    
+    // 2. Não pode ter respondido
+    if (respondedFormIds.has(form.id)) return false
+    
+    // 3. Verificação adicional de roles (dupla segurança)
+    if (userProfile && form.visibleToRoles && form.visibleToRoles.length > 0) {
+      const userFunctionalRoles = getUserFunctionalRoles(userProfile.extraData)
+      const hasPermission = canUserViewForm(userFunctionalRoles, form.visibleToRoles)
+      if (!hasPermission) return false
+    }
+    
+    return true
+  })
+  
+  // Concluídas: não HIDDEN e já respondidas
+  const completedForms = forms.filter((form: any) => {
+    // 1. Status não pode ser HIDDEN
+    if (form.externalStatus === "HIDDEN") return false
+    
+    // 2. Deve ter respondido
+    if (!respondedFormIds.has(form.id)) return false
+    
+    // 3. Verificação adicional de roles (dupla segurança)
+    if (userProfile && form.visibleToRoles && form.visibleToRoles.length > 0) {
+      const userFunctionalRoles = getUserFunctionalRoles(userProfile.extraData)
+      const hasPermission = canUserViewForm(userFunctionalRoles, form.visibleToRoles)
+      if (!hasPermission) return false
+    }
+    
+    return true
+  })
 
   return (
     <DashboardLayout>
@@ -50,6 +94,19 @@ export default function DashboardPage() {
               Bem-vindo, {session?.user?.name || "Usuário"}
             </h1>
             <p className="text-muted-foreground">Confira suas avaliações e informações importantes.</p>
+            {userProfile && userProfile.functionalRoles && userProfile.functionalRoles.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                <span className="text-xs text-muted-foreground">Suas roles:</span>
+                {userProfile.functionalRoles.map((role: string) => {
+                  const roleLabel = FUNCTIONAL_ROLES_OPTIONS.find(r => r.value === role)?.label || role
+                  return (
+                    <span key={role} className="text-xs bg-upe-blue/10 text-upe-blue px-2 py-1 rounded">
+                      {roleLabel}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -120,9 +177,26 @@ export default function DashboardPage() {
 
               <div className="space-y-4">
                 {loading ? (
-                  <div>Carregando...</div>
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-pulse" />
+                      <div className="text-muted-foreground">Carregando avaliações...</div>
+                    </CardContent>
+                  </Card>
                 ) : pendingForms.length === 0 ? (
-                  <div className="text-muted-foreground">Nenhuma avaliação pendente.</div>
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <div className="text-muted-foreground mb-2">Nenhuma avaliação pendente</div>
+                      {userProfile && userProfile.functionalRoles && userProfile.functionalRoles.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Você tem acesso a formulários para: {userProfile.functionalRoles.map((role: string) => 
+                            FUNCTIONAL_ROLES_OPTIONS.find(r => r.value === role)?.label || role
+                          ).join(", ")}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
                 ) : (
                   pendingForms.slice(0, 5).map((form) => (
                     <Card key={form.id}>

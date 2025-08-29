@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { getUserFunctionalRoles, canUserViewForm, isAdminUser } from "@/lib/user-utils"
 
 // Função para converter tipos de questão para o formato esperado pelo Prisma
 function convertQuestionType(type: string): string {
@@ -22,7 +23,12 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get("id")
+    
+    // Obter sessão do usuário para verificar roles funcionais
+    const session = await getServerSession(authOptions)
+    
     if (id) {
+      // Buscar formulário específico por ID
       const form = await prisma.form.findUnique({
         where: { id },
         include: { 
@@ -34,9 +40,31 @@ export async function GET(req: Request) {
         },
       })
       if (!form) return NextResponse.json({ message: "Formulário não encontrado" }, { status: 404 })
+      
+      // Para formulário específico, verificar se usuário pode acessar
+      if (session?.user?.id) {
+        const user = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { role: true, extraData: true }
+        })
+        
+        // ADMIN e CSA podem ver qualquer formulário
+        if (user && !isAdminUser(user.role)) {
+          // Usuários comuns: verificar se podem ver este formulário
+          const userFunctionalRoles = getUserFunctionalRoles(user.extraData)
+          const hasPermission = canUserViewForm(userFunctionalRoles, form.visibleToRoles)
+          
+          if (!hasPermission) {
+            return NextResponse.json({ message: "Formulário não encontrado" }, { status: 404 })
+          }
+        }
+      }
+      
       return NextResponse.json(form)
     }
-    const forms = await prisma.form.findMany({
+    
+    // Buscar todos os formulários
+    let forms = await prisma.form.findMany({
       include: {
         questions: { 
           orderBy: { order: 'asc' } 
@@ -46,8 +74,26 @@ export async function GET(req: Request) {
       },
       orderBy: { createdAt: "desc" },
     })
+    
+    // Aplicar filtro de roles funcionais se usuário não for ADMIN/CSA
+    if (session?.user?.id) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true, extraData: true }
+      })
+      
+      if (user && !isAdminUser(user.role)) {
+        const userFunctionalRoles = getUserFunctionalRoles(user.extraData)
+        
+        forms = forms.filter(form => {
+          return canUserViewForm(userFunctionalRoles, form.visibleToRoles)
+        })
+      }
+    }
+    
     return NextResponse.json(forms)
   } catch (error) {
+    console.error("Erro ao buscar formulários:", error)
     return NextResponse.json({ message: "Erro ao buscar formulários" }, { status: 500 })
   }
 }
@@ -163,15 +209,22 @@ export async function PATCH(req: Request) {
     const data = await req.json()
 
     if (action === "visibility") {
-      const { id, visibleToRoles, visibleToUserIds, externalStatus } = data
+      const { id, visibleToRoles, status } = data
       if (!id) return NextResponse.json({ message: "ID do formulário é obrigatório" }, { status: 400 })
+      
+      // Dados para atualizar
+      const updateData: any = {
+        visibleToRoles: visibleToRoles || [],
+      }
+      
+      // Se status foi fornecido, atualizar externalStatus
+      if (status) {
+        updateData.externalStatus = status
+      }
+      
       const form = await prisma.form.update({
         where: { id },
-        data: {
-          visibleToRoles: visibleToRoles || [],
-          visibleToUserIds: visibleToUserIds || [],
-          ...(externalStatus ? { externalStatus } : {}),
-        },
+        data: updateData,
       })
       return NextResponse.json(form)
     } else if (action === "external-status") {
