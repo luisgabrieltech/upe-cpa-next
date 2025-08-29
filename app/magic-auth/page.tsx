@@ -30,7 +30,7 @@ function MagicAuthContent() {
           redirect: true,
           email: data.user.email,
           magic: true,
-          callbackUrl: "/dashboard?magic=true"
+          callbackUrl: "/sistemacpa/dashboard?magic=true"
         })
         setStatus("success")
       } else {
