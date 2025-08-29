@@ -40,3 +40,27 @@ export const FUNCTIONAL_ROLES_OPTIONS = [
   { value: "TECNICO_UNIDADES_ENSINO", label: "Técnico Unidades Ensino" },
   { value: "TECNICO_COMPLEXO_HOSPITALAR", label: "Técnico Complexo Hospitalar" },
 ] as const
+
+/**
+ * Mapeia cargo selecionado para functional role
+ * Usado no magic login para garantir consistência
+ */
+export const mapCargoToFunctionalRole = (cargo: string): string => {
+  // Mapeamento direto - cargo já vem no formato correto do dropdown
+  const validRoles = FUNCTIONAL_ROLES_OPTIONS.map(r => r.value)
+  
+  if (validRoles.includes(cargo)) {
+    return cargo
+  }
+  
+  // Fallback - se cargo não for reconhecido, retorna padrão
+  console.warn(`Cargo não reconhecido: ${cargo}, usando TECNICO_COMPLEXO_HOSPITALAR como padrão`)
+  return "TECNICO_COMPLEXO_HOSPITALAR"
+}
+
+/**
+ * Valida se um cargo é válido
+ */
+export const isValidFunctionalRole = (cargo: string): boolean => {
+  return FUNCTIONAL_ROLES_OPTIONS.some(role => role.value === cargo)
+}

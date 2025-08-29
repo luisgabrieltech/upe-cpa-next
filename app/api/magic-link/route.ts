@@ -2,23 +2,79 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { randomBytes } from "crypto"
 import { addMinutes } from "date-fns"
+import { mapCargoToFunctionalRole, isValidFunctionalRole } from "@/lib/user-utils"
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json()
-    if (!email) return NextResponse.json({ message: "E-mail obrigatório" }, { status: 400 })
-    // Buscar usuário
-    let user = await prisma.user.findUnique({ where: { email } })
-    if (!user) {
-      // Criar usuário automaticamente
-      user = await prisma.user.create({
-        data: {
-          email,
-          name: "",
-          password: randomBytes(16).toString("hex"),
-          extraData: {},
-        },
+    const { name, email, matricula, cargo } = await req.json()
+    
+    // Validações
+    if (!name || !name.trim()) {
+      return NextResponse.json({ message: "Nome é obrigatório" }, { status: 400 })
+    }
+    
+    if (!email && !matricula) {
+      return NextResponse.json({ message: "E-mail ou matrícula é obrigatório" }, { status: 400 })
+    }
+    
+    if (!cargo || !isValidFunctionalRole(cargo)) {
+      return NextResponse.json({ message: "Cargo é obrigatório e deve ser válido" }, { status: 400 })
+    }
+
+    // Buscar usuário existente
+    let user = null
+    
+    if (email) {
+      user = await prisma.user.findUnique({ where: { email } })
+    }
+    
+    if (!user && matricula) {
+      user = await prisma.user.findFirst({
+        where: {
+          extraData: {
+            path: ["registration"],
+            equals: matricula
+          }
+        }
       })
+    }
+
+    // Mapear cargo para functional role
+    const functionalRole = mapCargoToFunctionalRole(cargo)
+
+    // Se usuário não existe, criar novo
+    if (!user) {
+      const userData = {
+        name: name.trim(),
+        email: email || `matricula.${matricula}@servidor.upe.br`,
+        password: randomBytes(16).toString("hex"),
+        role: "USER",
+        extraData: {
+          registration: matricula || null,
+          functionalRoles: [functionalRole],
+          createdVia: "magic-login"
+        }
+      }
+      
+      user = await prisma.user.create({ data: userData })
+      console.log(`✅ Novo usuário criado via magic login: ${user.email}`)
+    } else {
+      // Atualizar dados do usuário existente
+      const updatedExtraData = {
+        ...user.extraData,
+        registration: matricula || user.extraData?.registration || null,
+        functionalRoles: [functionalRole], // Atualizar com o cargo selecionado
+        lastMagicLogin: new Date().toISOString()
+      }
+      
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: name.trim(), // Atualizar nome se fornecido
+          extraData: updatedExtraData
+        }
+      })
+      console.log(`✅ Usuário atualizado via magic login: ${user.email}`)
     }
     // Gerar token
     const token = randomBytes(32).toString("hex")
