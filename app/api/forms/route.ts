@@ -132,21 +132,7 @@ export async function POST(req: Request) {
         include: { responses: true }
       })
       
-      // 2. Identificar questões que podem ser deletadas (sem respostas)
-      const questionsWithResponses = existingQuestions.filter(q => q.responses.length > 0)
-      const questionsWithoutResponses = existingQuestions.filter(q => q.responses.length === 0)
-      
-      console.log('📊 Questões com respostas:', questionsWithResponses.length)
-      console.log('📊 Questões sem respostas:', questionsWithoutResponses.length)
-      
-      // 3. Deletar apenas questões sem respostas
-      for (const question of questionsWithoutResponses) {
-        await prisma.question.delete({
-          where: { id: question.id }
-        })
-      }
-      
-      // 4. Preparar questões para atualização/criação
+      // 2. Preparar questões para atualização/criação PRIMEIRO
       const questionsToProcess = questions.map((q: any, idx: number) => {
         const existingQuestion = existingQuestions.find(eq => 
           eq.customId === q.id || eq.id === q.id
@@ -160,6 +146,30 @@ export async function POST(req: Request) {
           hasResponses: existingQuestion ? existingQuestion.responses.length > 0 : false
         }
       })
+      
+      // 3. Identificar questões que serão mantidas vs deletadas
+      const questionsToKeep = new Set()
+      questionsToProcess.forEach(q => {
+        if (q.isExisting && q.existingId) {
+          questionsToKeep.add(q.existingId)
+        }
+      })
+      
+      // 4. Deletar apenas questões que NÃO estão sendo mantidas E não têm respostas
+      const questionsToDelete = existingQuestions.filter(eq => 
+        !questionsToKeep.has(eq.id) && eq.responses.length === 0
+      )
+      
+      console.log('📊 Questões a manter:', questionsToKeep.size)
+      console.log('📊 Questões a deletar:', questionsToDelete.length)
+      console.log('🔍 IDs a deletar:', questionsToDelete.map(q => q.id))
+      
+      for (const question of questionsToDelete) {
+        console.log('🗑️ Deletando questão:', question.id, question.text.substring(0, 30))
+        await prisma.question.delete({
+          where: { id: question.id }
+        })
+      }
       
       // 5. Atualizar formulário (metadados)
       const form = await prisma.form.update({
@@ -180,6 +190,21 @@ export async function POST(req: Request) {
         if (q.isExisting && q.hasResponses) {
           // Questão existente COM respostas: atualizar com cuidado
           const existingQuestion = existingQuestions.find(eq => eq.id === q.existingId)
+          
+          if (!existingQuestion) {
+            console.error('❌ ERRO: Questão não encontrada para atualização:', q.existingId)
+            continue // Pula esta questão
+          }
+          
+          // Verificar se a questão ainda existe no banco
+          const questionExists = await prisma.question.findUnique({
+            where: { id: q.existingId }
+          })
+          
+          if (!questionExists) {
+            console.error('❌ ERRO: Questão foi deletada antes da atualização:', q.existingId)
+            continue // Pula esta questão
+          }
           
           // Permitir adição de novas opções, mas preservar existentes
           let updatedOptions = q.options || []
@@ -205,14 +230,38 @@ export async function POST(req: Request) {
           console.log('🔄 Questão atualizada (preservando dados):', q.text.substring(0, 30))
           console.log('📝 Opções atualizadas:', updatedOptions)
         } else if (q.isExisting && !q.hasResponses) {
-          // Questão existente SEM respostas: atualizar completamente
-          await prisma.question.update({
-            where: { id: q.existingId },
-            data: {
-              customId: q.id || null,
-              text: q.text,
-              type: convertQuestionType(q.type),
-              required: q.required,
+          // Questão existente SEM respostas: verificar se ainda existe
+          const questionExists = await prisma.question.findUnique({
+            where: { id: q.existingId }
+          })
+          
+          if (!questionExists) {
+            console.log('⚠️ Questão foi deletada, criando nova:', q.text.substring(0, 30))
+            // Se foi deletada, criar como nova questão
+            await prisma.question.create({
+              data: {
+                customId: q.id || null,
+                text: q.text,
+                type: convertQuestionType(q.type),
+                required: q.required,
+                options: q.options || [],
+                rows: q.rows || [],
+                columns: q.columns || [],
+                order: q.order,
+                conditional: q.conditional || null,
+                formId: id,
+              }
+            })
+            console.log('✨ Nova questão criada (substituta):', q.text.substring(0, 30))
+          } else {
+            // Questão existe: atualizar completamente
+            await prisma.question.update({
+              where: { id: q.existingId },
+              data: {
+                customId: q.id || null,
+                text: q.text,
+                type: convertQuestionType(q.type),
+                required: q.required,
               options: q.options || [],
               rows: q.rows || [],
               columns: q.columns || [],
@@ -221,6 +270,7 @@ export async function POST(req: Request) {
             }
           })
           console.log('🔄 Questão atualizada (sem respostas):', q.text.substring(0, 30))
+          }
         } else {
           // Questão nova: criar
           await prisma.question.create({
