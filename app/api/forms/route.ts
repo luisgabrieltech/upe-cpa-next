@@ -123,12 +123,45 @@ export async function POST(req: Request) {
 
     // Se tiver ID, é uma atualização
     if (id) {
-      // Primeiro, deletar todas as questões existentes
-      await prisma.question.deleteMany({
-        where: { formId: id }
+      // EDIÇÃO INTELIGENTE: Preservar questões com respostas
+      console.log('🔄 Iniciando edição inteligente do formulário', id)
+      
+      // 1. Buscar questões existentes
+      const existingQuestions = await prisma.question.findMany({
+        where: { formId: id },
+        include: { responses: true }
       })
-
-      // Depois, atualizar o formulário e criar as novas questões
+      
+      // 2. Identificar questões que podem ser deletadas (sem respostas)
+      const questionsWithResponses = existingQuestions.filter(q => q.responses.length > 0)
+      const questionsWithoutResponses = existingQuestions.filter(q => q.responses.length === 0)
+      
+      console.log('📊 Questões com respostas:', questionsWithResponses.length)
+      console.log('📊 Questões sem respostas:', questionsWithoutResponses.length)
+      
+      // 3. Deletar apenas questões sem respostas
+      for (const question of questionsWithoutResponses) {
+        await prisma.question.delete({
+          where: { id: question.id }
+        })
+      }
+      
+      // 4. Preparar questões para atualização/criação
+      const questionsToProcess = questions.map((q: any, idx: number) => {
+        const existingQuestion = existingQuestions.find(eq => 
+          eq.customId === q.id || eq.id === q.id
+        )
+        
+        return {
+          ...q,
+          order: idx,
+          isExisting: !!existingQuestion,
+          existingId: existingQuestion?.id,
+          hasResponses: existingQuestion ? existingQuestion.responses.length > 0 : false
+        }
+      })
+      
+      // 5. Atualizar formulário (metadados)
       const form = await prisma.form.update({
         where: { id },
         data: {
@@ -139,23 +172,83 @@ export async function POST(req: Request) {
           deadline: deadline ? new Date(deadline) : null,
           estimatedTime,
           generatesCertificate: generatesCertificate || false,
-          questions: {
-            create: questions.map((q: any, idx: number) => ({
-              customId: q.id || null, // Salva o ID personalizado se fornecido
+        }
+      })
+      
+      // 6. Processar questões uma por uma
+      for (const q of questionsToProcess) {
+        if (q.isExisting && q.hasResponses) {
+          // Questão existente COM respostas: atualizar com cuidado
+          const existingQuestion = existingQuestions.find(eq => eq.id === q.existingId)
+          
+          // Permitir adição de novas opções, mas preservar existentes
+          let updatedOptions = q.options || []
+          if (existingQuestion && Array.isArray(existingQuestion.options)) {
+            // Mesclar opções: manter existentes + adicionar novas
+            const existingOptions = existingQuestion.options
+            const newOptions = updatedOptions.filter(opt => !existingOptions.includes(opt))
+            updatedOptions = [...existingOptions, ...newOptions]
+          }
+          
+          await prisma.question.update({
+            where: { id: q.existingId },
+            data: {
+              text: q.text,
+              order: q.order,
+              options: updatedOptions, // Permite adição de opções
+              rows: q.rows || existingQuestion?.rows || [], // Permite adição de linhas
+              columns: q.columns || existingQuestion?.columns || [], // Permite adição de colunas
+              conditional: q.conditional || existingQuestion?.conditional || null,
+              // NÃO alteramos type e required para preservar integridade
+            }
+          })
+          console.log('🔄 Questão atualizada (preservando dados):', q.text.substring(0, 30))
+          console.log('📝 Opções atualizadas:', updatedOptions)
+        } else if (q.isExisting && !q.hasResponses) {
+          // Questão existente SEM respostas: atualizar completamente
+          await prisma.question.update({
+            where: { id: q.existingId },
+            data: {
+              customId: q.id || null,
               text: q.text,
               type: convertQuestionType(q.type),
               required: q.required,
               options: q.options || [],
               rows: q.rows || [],
               columns: q.columns || [],
-              order: idx,
+              order: q.order,
               conditional: q.conditional || null,
-            })),
-          },
-        },
-        include: { questions: true },
+            }
+          })
+          console.log('🔄 Questão atualizada (sem respostas):', q.text.substring(0, 30))
+        } else {
+          // Questão nova: criar
+          await prisma.question.create({
+            data: {
+              customId: q.id || null,
+              text: q.text,
+              type: convertQuestionType(q.type),
+              required: q.required,
+              options: q.options || [],
+              rows: q.rows || [],
+              columns: q.columns || [],
+              order: q.order,
+              conditional: q.conditional || null,
+              formId: id,
+            }
+          })
+          console.log('✨ Nova questão criada:', q.text.substring(0, 30))
+        }
+      }
+      
+      // 7. Buscar formulário atualizado
+      const updatedForm = await prisma.form.findUnique({
+        where: { id },
+        include: { questions: { orderBy: { order: 'asc' } } }
       })
-      return NextResponse.json(form)
+      
+      console.log('🎉 Edição inteligente concluída com sucesso!')
+      return NextResponse.json(updatedForm)
     }
 
     // Se não tiver ID, é uma criação
