@@ -160,15 +160,32 @@ export async function POST(req: Request) {
         !questionsToKeep.has(eq.id) && eq.responses.length === 0
       )
       
+      // PROTEÇÃO EXTRA: Verificar novamente antes de deletar
+      const questionsWithResponses = existingQuestions.filter(eq => eq.responses.length > 0)
+      
       console.log('📊 Questões a manter:', questionsToKeep.size)
+      console.log('📊 Questões com respostas (protegidas):', questionsWithResponses.length)
       console.log('📊 Questões a deletar:', questionsToDelete.length)
       console.log('🔍 IDs a deletar:', questionsToDelete.map(q => q.id))
       
+      // VALIDAÇÃO: Garantir que nenhuma questão com resposta será deletada
       for (const question of questionsToDelete) {
-        console.log('🗑️ Deletando questão:', question.id, question.text.substring(0, 30))
-        await prisma.question.delete({
-          where: { id: question.id }
-        })
+        // Verificação dupla de segurança
+        if (question.responses.length > 0) {
+          console.error('🚨 ERRO: Tentativa de deletar questão com respostas!', question.id)
+          continue // Pular esta questão
+        }
+        
+        try {
+          console.log('🗑️ Deletando questão:', question.id, question.text.substring(0, 30))
+          await prisma.question.delete({
+            where: { id: question.id }
+          })
+          console.log('✅ Questão deletada com sucesso:', question.id)
+        } catch (error) {
+          console.error('❌ Erro ao deletar questão:', question.id, error)
+          // Continuar com outras questões mesmo se uma falhar
+        }
       }
       
       // 5. Atualizar formulário (metadados)
@@ -185,8 +202,12 @@ export async function POST(req: Request) {
         }
       })
       
-      // 6. Processar questões uma por uma
+      // 6. Processar questões uma por uma (com tratamento de erro individual)
+      let processedCount = 0
+      let errorCount = 0
+      
       for (const q of questionsToProcess) {
+        try {
         if (q.isExisting && q.hasResponses) {
           // Questão existente COM respostas: atualizar com cuidado
           const existingQuestion = existingQuestions.find(eq => eq.id === q.existingId)
@@ -273,23 +294,37 @@ export async function POST(req: Request) {
           }
         } else {
           // Questão nova: criar
-          await prisma.question.create({
-            data: {
-              customId: q.id || null,
-              text: q.text,
-              type: convertQuestionType(q.type),
-              required: q.required,
-              options: q.options || [],
-              rows: q.rows || [],
-              columns: q.columns || [],
-              order: q.order,
-              conditional: q.conditional || null,
-              formId: id,
-            }
-          })
-          console.log('✨ Nova questão criada:', q.text.substring(0, 30))
+          try {
+            await prisma.question.create({
+              data: {
+                customId: q.id || null,
+                text: q.text,
+                type: convertQuestionType(q.type),
+                required: q.required,
+                options: q.options || [],
+                rows: q.rows || [],
+                columns: q.columns || [],
+                order: q.order,
+                conditional: q.conditional || null,
+                formId: id,
+              }
+            })
+            console.log('✨ Nova questão criada:', q.text.substring(0, 30))
+          } catch (error) {
+            console.error('❌ Erro ao criar nova questão:', q.text.substring(0, 30), error)
+            // Não parar o processo por conta de uma questão
+          }
+        }
+        
+        processedCount++
+        } catch (error) {
+          console.error('❌ Erro ao processar questão:', q.text?.substring(0, 30), error)
+          errorCount++
+          // Continuar processando outras questões
         }
       }
+      
+      console.log(`📊 Processamento concluído: ${processedCount} questões processadas, ${errorCount} erros`)
       
       // 7. Buscar formulário atualizado
       const updatedForm = await prisma.form.findUnique({
